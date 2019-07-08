@@ -1,0 +1,15 @@
+[package]
+name = "ffms2-sys"
+version = "0.1.0"
+authors = ["Luni-4 <luni-4@hotmail.it>"]
+description = "FFI bindings to ffms2"
+repository = "https://github.com/Luni-4/ffms2-rs"
+edition = "2018"
+license = "MIT"
+
+[build-dependencies]
+bindgen = "0.49"
+metadeps = "1.1"
+
+[package.metadata.pkg-config]
+ffms2 = "2.31"
