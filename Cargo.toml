@@ -1,5 +1,5 @@
 [package]
-name = "ffms2-rs"
+name = "ffms2"
 version = "0.1.0"
 authors = ["Luni-4 <luni-4@hotmail.it>"]
 description = "FFI bindings to ffms2"
@@ -9,6 +9,7 @@ license = "MIT"
 
 [dependencies]
 ffms2-sys = { path = "ffms2-sys" }
+paste = "0.1"
 
 [workspace]
 members = ["ffms2-sys"]
