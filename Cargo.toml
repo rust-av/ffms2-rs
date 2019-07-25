@@ -9,7 +9,21 @@ license = "MIT"
 
 [dependencies]
 ffms2-sys = { path = "ffms2-sys" }
+cfg-if = "0.1"
 paste = "0.1"
+
+[features]
+ffms2-2-15-3 = []
+ffms2-2-15-4 = ["ffms2-2-15-3"]
+ffms2-2-17-1 = ["ffms2-2-15-4"]
+ffms2-2-21-0 = ["ffms2-2-17-1"]
+ffms2-2-24-0 = ["ffms2-2-21-0"]
+ffms2-2-27-0 = ["ffms2-2-24-0"]
+ffms2-2-30-0 = ["ffms2-2-27-0"]
+ffms2-2-31-0 = ["ffms2-2-30-0"]
+
+default = ["ffms2-2-31-0"]
+foo = []
 
 [workspace]
 members = ["ffms2-sys"]
