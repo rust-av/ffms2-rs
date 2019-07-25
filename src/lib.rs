@@ -1,6 +1,11 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
+pub mod audio;
+pub mod frame;
+pub mod resample;
+pub mod track;
+
 mod utility;
 
 use ffms2_sys::*;
@@ -60,52 +65,10 @@ create_enum!(
 );
 
 create_enum!(
-    TrackType,
-    FFMS_TrackType,
-    track_type,
-    (
-        TYPE_UNKNOWN,
-        TYPE_VIDEO,
-        TYPE_AUDIO,
-        TYPE_DATA,
-        TYPE_SUBTITLE,
-        TYPE_ATTACHMENT,
-    )
-);
-
-create_enum!(
     SampleFormat,
     FFMS_SampleFormat,
     sample_format,
     (FMT_U8, FMT_S16, FMT_S32, FMT_FLT, FMT_DBL)
-);
-
-create_enum!(
-    AudioChannel,
-    FFMS_AudioChannel,
-    audio_channel,
-    (
-        CH_FRONT_LEFT,
-        CH_FRONT_RIGHT,
-        CH_FRONT_CENTER,
-        CH_LOW_FREQUENCY,
-        CH_BACK_LEFT,
-        CH_BACK_RIGHT,
-        CH_FRONT_LEFT_OF_CENTER,
-        CH_FRONT_RIGHT_OF_CENTER,
-        CH_BACK_CENTER,
-        CH_SIDE_LEFT,
-        CH_SIDE_RIGHT,
-        CH_TOP_CENTER,
-        CH_TOP_FRONT_LEFT,
-        CH_TOP_FRONT_CENTER,
-        CH_TOP_FRONT_RIGHT,
-        CH_TOP_BACK_LEFT,
-        CH_TOP_BACK_CENTER,
-        CH_TOP_BACK_RIGHT,
-        CH_STEREO_LEFT,
-        CH_STEREO_RIGHT,
-    )
 );
 
 create_enum!(
@@ -125,13 +88,6 @@ create_enum!(
         RESIZER_LANCZOS,
         RESIZER_SPLINE,
     )
-);
-
-create_enum!(
-    AudioDelay,
-    FFMS_AudioDelayModes,
-    audio_delay_modes,
-    (DELAY_NO_SHIFT, DELAY_TIME_ZERO, DELAY_FIRST_VIDEO_TRACK)
 );
 
 create_enum!(
@@ -202,30 +158,6 @@ create_enum!(
         MATRIX_ENCODING_PRO_LOGIC_IIZ,
         MATRIX_ENCODING_DOLBY_EX,
         MATRIX_ENCODING_DOLBY_HEADPHONE,
-    )
-);
-
-create_enum!(
-    ResampleFilterType,
-    FFMS_ResampleFilterType,
-    resample_filter_type,
-    (
-        RESAMPLE_FILTER_CUBIC,
-        RESAMPLE_FILTER_SINC,
-        RESAMPLE_FILTER_KAISER,
-    )
-);
-
-create_enum!(
-    AudioDitherMethod,
-    FFMS_AudioDitherMethod,
-    audio_dither_method,
-    (
-        RESAMPLE_DITHER_NONE,
-        RESAMPLE_DITHER_RECTANGULAR,
-        RESAMPLE_DITHER_TRIANGULAR,
-        RESAMPLE_DITHER_TRIANGULAR_HIGHPASS,
-        RESAMPLE_DITHER_TRIANGULAR_NOISESHAPING,
     )
 );
 
