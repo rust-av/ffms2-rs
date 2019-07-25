@@ -7,7 +7,7 @@ include!(concat!(env!("OUT_DIR"), "/ffms2.rs"));
 
 #[cfg(test)]
 mod tests {
-    use super::*;    
+    use super::*;
     #[test]
     fn version() {
         let version = unsafe { FFMS_GetVersion() };

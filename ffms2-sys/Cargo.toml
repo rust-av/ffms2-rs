@@ -8,8 +8,8 @@ edition = "2018"
 license = "MIT"
 
 [build-dependencies]
-bindgen = "0.49"
+bindgen = "0.50"
 metadeps = "1.1"
 
 [package.metadata.pkg-config]
-ffms2 = "2.31"
+ffms2 = "2.15"
