@@ -133,7 +133,7 @@ macro_rules! set_params {
 #[macro_export]
 macro_rules! set_feature_params {
     ($struct:ident, $param:ident,
-    ($($feat:meta, $feat_name:ident, $feat_type:ty, $feat_expr:expr),*$(,)*))
+    ($(($feat:meta, $feat_name:ident, $feat_type:ty, $feat_expr:expr)),*$(,)*))
     => {
             impl $struct {
                 paste::item! {

@@ -1,4 +1,5 @@
 use crate::*;
+use crate::audio::MatrixEncoding;
 
 create_enum!(
     ResampleFilterType,
@@ -21,6 +22,17 @@ create_enum!(
         RESAMPLE_DITHER_TRIANGULAR,
         RESAMPLE_DITHER_TRIANGULAR_HIGHPASS,
         RESAMPLE_DITHER_TRIANGULAR_NOISESHAPING,
+    )
+);
+
+create_enum!(
+    MixingCoefficientType,
+    FFMS_MixingCoefficientType,
+    mix_coefficient_type,
+    (
+        MIXING_COEFFICIENT_Q8,
+        MIXING_COEFFICIENT_Q15,
+        MIXING_COEFFICIENT_FLT,
     )
 );
 
@@ -52,9 +64,9 @@ create_struct!(
         &SampleFormat,
         usize,
         &MixingCoefficientType,
-        f32,
-        f32,
-        f32,
+        f64,
+        f64,
+        f64,
         usize,
         usize,
         usize,
@@ -89,7 +101,7 @@ create_struct!(
         ChannelLayout as i64,
         SampleFormat::to_sample_format(SampleFormat),
         SampleRate as i32,
-        MixingCoefficientType::to_mixing_coefficient_type(MixingCoefficientType),
+        MixingCoefficientType::to_mix_coefficient_type(MixingCoefficientType),
         CenterMixLevel as f64,
         SurroundMixLevel as f64,
         LFEMixLevel as f64,

@@ -37,6 +37,21 @@ create_enum!(
     (DELAY_NO_SHIFT, DELAY_TIME_ZERO, DELAY_FIRST_VIDEO_TRACK)
 );
 
+create_enum!(
+    MatrixEncoding,
+    FFMS_MatrixEncoding,
+    matrix_encoding,
+    (
+        MATRIX_ENCODING_NONE,
+        MATRIX_ENCODING_DOBLY,
+        MATRIX_ENCODING_PRO_LOGIC_II,
+        MATRIX_ENCODING_PRO_LOGIC_IIX,
+        MATRIX_ENCODING_PRO_LOGIC_IIZ,
+        MATRIX_ENCODING_DOLBY_EX,
+        MATRIX_ENCODING_DOLBY_HEADPHONE,
+    )
+);
+
 set_struct!(AudioProperties, audio_properties, FFMS_AudioProperties);
 
 default_struct!(
@@ -53,7 +68,7 @@ default_struct!(
         FirstTime,
         LastTime,
     ),
-    (0, 0, 0, 0, 0, 0, 0.0, 0.0,),
+    (0, 0, 0, 0, 0, 0, 0.0, 0.0),
     ((cfg(feature = "ffms2-2-30-0"), LastEndTime, 0.0))
 );
 
@@ -70,7 +85,7 @@ set_params!(
         FirstTime,
         LastTime,
     ),
-    (usize, usize, usize, usize, usize, usize, f64, f64,),
+    (usize, usize, usize, usize, usize, usize, f64, f64),
     (
         SampleFormat as i32,
         SampleRate as i32,
@@ -86,5 +101,5 @@ set_params!(
 set_feature_params!(
     AudioProperties,
     audio_properties,
-    (cfg(feature = "ffms2-2-30-0"), LastEndTime, f64, 0.0)
+    ((cfg(feature = "ffms2-2-30-0"), LastEndTime, f64, LastEndTime as f64))
 );

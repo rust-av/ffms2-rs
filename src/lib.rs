@@ -3,6 +3,7 @@
 
 pub mod audio;
 pub mod frame;
+pub mod video;
 pub mod resample;
 pub mod track;
 
@@ -11,7 +12,6 @@ mod utility;
 use ffms2_sys::*;
 
 use std::fmt;
-use std::ptr;
 
 errors!(Error, FFMS_Errors, ffms_errors,
         (
@@ -52,113 +52,10 @@ errors!(IndexErrorHandling, FFMS_IndexErrorHandling, ffms_idx_errors,
 );
 
 create_enum!(
-    SeekMode,
-    FFMS_SeekMode,
-    seek_mode,
-    (
-        SEEK_LINEAR_NO_RW,
-        SEEK_LINEAR,
-        SEEK_NORMAL,
-        SEEK_UNSAFE,
-        SEEK_AGGRESSIVE,
-    )
-);
-
-create_enum!(
     SampleFormat,
     FFMS_SampleFormat,
     sample_format,
     (FMT_U8, FMT_S16, FMT_S32, FMT_FLT, FMT_DBL)
-);
-
-create_enum!(
-    Resizers,
-    FFMS_Resizers,
-    resizers,
-    (
-        RESIZER_FAST_BILINEAR,
-        RESIZER_BILINEAR,
-        RESIZER_BICUBIC,
-        RESIZER_X,
-        RESIZER_POINT,
-        RESIZER_AREA,
-        RESIZER_BICUBLIN,
-        RESIZER_GAUSS,
-        RESIZER_SINC,
-        RESIZER_LANCZOS,
-        RESIZER_SPLINE,
-    )
-);
-
-create_enum!(
-    ChromaLocations,
-    FFMS_ChromaLocations,
-    chroma_locations,
-    (
-        LOC_UNSPECIFIED,
-        LOC_LEFT,
-        LOC_CENTER,
-        LOC_TOPLEFT,
-        LOC_TOP,
-        LOC_BOTTOMLEFT,
-        LOC_BOTTOM,
-    )
-);
-
-create_enum!(
-    ColorRanges,
-    FFMS_ColorRanges,
-    color_ranges,
-    (CR_UNSPECIFIED, CR_MPEG, CR_JPEG)
-);
-
-create_enum!(
-    Stereo3DType,
-    FFMS_Stereo3DType,
-    stereo3d_type,
-    (
-        S3D_TYPE_2D,
-        S3D_TYPE_SIDEBYSIDE,
-        S3D_TYPE_TOPBOTTOM,
-        S3D_TYPE_FRAMESEQUENCE,
-        S3D_TYPE_CHECKERBOARD,
-        S3D_TYPE_SIDEBYSIDE_QUINCUNX,
-        S3D_TYPE_LINES,
-        S3D_TYPE_COLUMNS,
-    )
-);
-
-create_enum!(
-    Stereo3DFlags,
-    FFMS_Stereo3DFlags,
-    stereo3d_flags,
-    (S3D_FLAGS_INVERT)
-);
-
-create_enum!(
-    MixingCoefficientType,
-    FFMS_MixingCoefficientType,
-    mixing_coefficient_type,
-    (
-        MIXING_COEFFICIENT_Q8,
-        MIXING_COEFFICIENT_Q15,
-        MIXING_COEFFICIENT_FLT,
-    )
-);
-
-create_enum!(
-    MatrixEncoding,
-    FFMS_MatrixEncoding,
-    matrix_encoding,
-    (
-        MATRIX_ENCODING_NONE,
-        MATRIX_ENCODING_DOBLY,
-        MATRIX_ENCODING_PRO_LOGIC_II,
-        MATRIX_ENCODING_PRO_LOGIC_IIX,
-        MATRIX_ENCODING_PRO_LOGIC_IIZ,
-        MATRIX_ENCODING_DOLBY_EX,
-        MATRIX_ENCODING_DOLBY_HEADPHONE,
-    )
 );
 
 create_enum!(
