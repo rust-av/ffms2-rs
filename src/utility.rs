@@ -29,7 +29,10 @@ macro_rules! errors {
     ($enum:ident, $type:ident, $func_name:ident,
     ($($field_name:ident: $field_err:expr),*$(,)*)) => {
 
-        create_enum!($enum, $type, $func_name, ($($field_name,)*));
+        #[derive(Clone, Copy, Debug)]
+        pub enum $enum {
+            $($field_name,)*
+        }
 
         impl fmt::Display for $enum {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -45,11 +48,12 @@ macro_rules! errors {
 
         impl $enum {
             paste::item! {
-                fn [<from_ $func_name>](e: &$type) -> Self {
+                pub(crate) fn from_i32(e: i32) -> Self {
                     match e {
                         $(
-                            $type::[<FFMS_ $field_name>] => $enum::$field_name,
+                            e if e == $type::[<FFMS_ $field_name>] as i32 => $enum::$field_name,
                         )*
+                        _ => unreachable!(),
                     }
                 }
             }
