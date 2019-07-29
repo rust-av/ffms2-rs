@@ -36,6 +36,16 @@ impl Index {
         }
     }
 
+    pub fn ErrorHandling(&self) -> IndexErrorHandling {
+        let index_error_handling = unsafe { FFMS_GetErrorHandling(self.index) };
+        match index_error_handling {
+            FFMS_IndexErrorHandling::FFMS_IEH_ABORT => IndexErrorHandling::IEH_ABORT,
+            FFMS_IndexErrorHandling::FFMS_IEH_CLEAR_TRACK => IndexErrorHandling::IEH_CLEAR_TRACK,
+            FFMS_IndexErrorHandling::FFMS_IEH_STOP_TRACK => IndexErrorHandling::IEH_STOP_TRACK,
+            FFMS_IndexErrorHandling::FFMS_IEH_IGNORE => IndexErrorHandling::IEH_IGNORE,
+        }
+    }
+
     pub fn ReadIndexFromBuffer(Buffer: &Vec<u8>) -> Result<Self, Error> {
         let mut error: Error = Default::default();
         let size = mem::size_of_val(Buffer.as_slice());
@@ -94,6 +104,10 @@ impl Index {
             Ok(&self.buffer)
         }
     }
+
+    pub(crate) fn as_mut_ptr(&self) -> *mut FFMS_Index {
+        self.index
+    }
 }
 
 impl Drop for Index {
@@ -122,11 +136,23 @@ impl Indexer {
         }
     }
 
+    pub fn CodecNameI(&self, Track: usize) -> String {
+        let c_ptr = unsafe { FFMS_GetCodecNameI(self.indexer, Track as i32) };
+        let c_str = unsafe { CString::from_raw(c_ptr as *mut i8) };
+        c_str.to_str().unwrap().to_owned()
+    }
+
+    pub fn FormatNameI(&self) -> String {
+        let c_ptr = unsafe { FFMS_GetFormatNameI(self.indexer) };
+        let c_str = unsafe { CString::from_raw(c_ptr as *mut i8) };
+        c_str.to_str().unwrap().to_owned()
+    }
+
     #[cfg(feature = "ffms2-2-21-0")]
-    pub fn DoIndexing2(&self, ErrorHandling: usize) -> Result<Index, Error> {
+    pub fn DoIndexing2(&self, ErrorHandling: &IndexErrorHandling) -> Result<Index, Error> {
         let mut error: Error = Default::default();
-        let index =
-            unsafe { FFMS_DoIndexing2(self.indexer, ErrorHandling as i32, error.as_mut_ptr()) };
+        let handling = IndexErrorHandling::to_idx_errors(ErrorHandling) as i32;
+        let index = unsafe { FFMS_DoIndexing2(self.indexer, handling, error.as_mut_ptr()) };
 
         if index.is_null() {
             Err(error)
@@ -153,7 +179,7 @@ impl Indexer {
     }
 
     #[cfg(feature = "ffms2-2-21-0")]
-    pub fn set_ProgressCallback<F, T>(&self, callback: F, value: T)
+    pub fn ProgressCallback<F, T>(&self, callback: F, value: T)
     where
         F: FnMut(usize, usize, T) -> usize + 'static,
     {

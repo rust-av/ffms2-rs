@@ -1,8 +1,11 @@
 use crate::*;
+use crate::video::*;
 
 use ffms2_sys::*;
 
 use std::ptr;
+use std::ffi::CString;
+use std::mem;
 
 create_enum!(
     Resizers,
@@ -260,6 +263,47 @@ set_feature_params!(
 );
 
 impl Frame {
+    pub fn GetFrame(V: &mut VideoSource, n: usize) -> Result<Self, Error> {
+        let mut error: Error = Default::default();
+
+        let c_frame = unsafe {
+            FFMS_GetFrame(V.as_mut_ptr(), n as i32, error.as_mut_ptr())
+        };
+
+        if c_frame.is_null() {
+            Err(error)
+        } else {
+            let ref_frame = unsafe {
+                mem::transmute::<*const FFMS_Frame, &FFMS_Frame>(c_frame)
+            };
+
+            Ok(Frame { frame: *ref_frame })
+        }
+    }
+
+    pub fn GetFrameByTime(V: &mut VideoSource, Time: f64) -> Result<Self, Error> {
+        let mut error: Error = Default::default();
+
+        let c_frame = unsafe {
+            FFMS_GetFrameByTime(V.as_mut_ptr(), Time, error.as_mut_ptr())
+        };
+
+        if c_frame.is_null() {
+            Err(error)
+        } else {
+            let ref_frame = unsafe {
+                mem::transmute::<*const FFMS_Frame, &FFMS_Frame>(c_frame)
+            };
+
+            Ok(Frame { frame: *ref_frame })
+        }
+    }
+
+    pub fn GetPixFmt(Name: &str) -> i32 {
+        let source = CString::new(Name).unwrap();
+        unsafe { FFMS_GetPixFmt(source.as_ptr()) }
+    }
+
     pub fn set_data(&mut self, data: [&[u8]; 4]) {
         self.frame.Data = [
             data[0].as_ptr(),

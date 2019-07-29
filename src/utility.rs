@@ -29,10 +29,7 @@ macro_rules! errors {
     ($enum:ident, $type:ident, $func_name:ident,
     ($($field_name:ident: $field_err:expr),*$(,)*)) => {
 
-        #[derive(Clone, Copy, Debug)]
-        pub enum $enum {
-            $($field_name,)*
-        }
+        create_enum!($enum, $type, $func_name, ($($field_name,)*));
 
         impl fmt::Display for $enum {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

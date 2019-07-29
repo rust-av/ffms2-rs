@@ -46,7 +46,7 @@ errors!(Errors, FFMS_Errors, ffms_errors,
         )
 );
 
-errors!(IndexErrorHandling, FFMS_IndexErrorHandling, ffms_idx_errors,
+errors!(IndexErrorHandling, FFMS_IndexErrorHandling, idx_errors,
        (
            IEH_ABORT: "Index error aborting.",
            IEH_CLEAR_TRACK: "Index error clear track.",

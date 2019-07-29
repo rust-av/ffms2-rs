@@ -117,3 +117,22 @@ create_struct!(
         AudioDitherMethod::to_audio_dither_method(DitherMethod)
     )
 );
+
+impl ResampleOptions {
+    pub(crate) fn create_struct(resample: &FFMS_ResampleOptions) -> Self {
+        ResampleOptions { resample: *resample }
+    }
+
+    pub(crate) fn as_ptr(&self) -> *const FFMS_ResampleOptions {
+        &self.resample
+    }
+}
+
+#[cfg(feature = "ffms2-2-15-4")]
+impl Drop for ResampleOptions {
+    fn drop(&mut self) {
+        unsafe {
+            FFMS_DestroyResampleOptions(&mut self.resample);
+        }
+    }
+}

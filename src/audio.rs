@@ -1,6 +1,13 @@
+use crate::index::*;
+use crate::resample::*;
 use crate::*;
 
 use ffms2_sys::*;
+
+use std::ffi::c_void;
+use std::ffi::CString;
+use std::mem;
+use std::path::PathBuf;
 
 create_enum!(
     AudioChannel,
@@ -101,5 +108,111 @@ set_params!(
 set_feature_params!(
     AudioProperties,
     audio_properties,
-    ((cfg(feature = "ffms2-2-30-0"), LastEndTime, f64, LastEndTime as f64))
+    ((
+        cfg(feature = "ffms2-2-30-0"),
+        LastEndTime,
+        f64,
+        LastEndTime as f64
+    ))
 );
+
+pub struct AudioSource {
+    audio_source: *mut FFMS_AudioSource,
+}
+
+impl AudioSource {
+    pub fn new(
+        SourceFile: &PathBuf,
+        Track: usize,
+        Index: &Index,
+        DelayMode: usize,
+    ) -> Result<Self, Error> {
+        let source = CString::new(SourceFile.to_str().unwrap()).unwrap();
+        let mut error: Error = Default::default();
+        let audio_source = unsafe {
+            FFMS_CreateAudioSource(
+                source.as_ptr(),
+                Track as i32,
+                Index.as_mut_ptr(),
+                DelayMode as i32,
+                error.as_mut_ptr(),
+            )
+        };
+
+        if audio_source.is_null() {
+            Err(error)
+        } else {
+            Ok(AudioSource { audio_source })
+        }
+    }
+
+    pub fn GetAudioProperties(&self) -> AudioProperties {
+        let audio_prop = unsafe { FFMS_GetAudioProperties(self.audio_source) };
+        let ref_audio = unsafe {
+            mem::transmute::<*const FFMS_AudioProperties, &FFMS_AudioProperties>(audio_prop)
+        };
+
+        AudioProperties {
+            audio_properties: *ref_audio,
+        }
+    }
+
+    pub fn GetAudio<T>(&self, Start: usize, Count: usize) -> Result<Vec<T>, Error> {
+        let mut Buf: Vec<T> = Vec::new();
+        let mut error: Error = Default::default();
+        let audio_prop = unsafe { FFMS_GetAudioProperties(self.audio_source) };
+        let num_sample = unsafe { (*audio_prop).NumSamples };
+
+        if Start as i64 > (num_sample - 1) || Count as i64 > (num_sample - 1) {
+            panic!("Requesting samples beyond the stream end");
+        }
+
+        let err = unsafe {
+            FFMS_GetAudio(
+                self.audio_source,
+                Buf.as_mut_ptr() as *mut c_void,
+                Start as i64,
+                Count as i64,
+                error.as_mut_ptr(),
+            )
+        };
+
+        if err != 0 {
+            Err(error)
+        } else {
+            Ok(Buf)
+        }
+    }
+
+    #[cfg(feature = "ffms2-2-15-4")]
+    pub fn CreateResampleOptions(&self) -> ResampleOptions {
+        let res_opt = unsafe { FFMS_CreateResampleOptions(self.audio_source) };
+        let ref_res = unsafe {
+            mem::transmute::<*const FFMS_ResampleOptions, &FFMS_ResampleOptions>(res_opt)
+        };
+
+        ResampleOptions::create_struct(ref_res)
+    }
+
+    #[cfg(feature = "ffms2-2-15-4")]
+    pub fn SetOutputFormatA(&self, options: &ResampleOptions) -> Result<(), Error> {
+        let mut error: Error = Default::default();
+        let err = unsafe {
+            FFMS_SetOutputFormatA(self.audio_source, options.as_ptr(), error.as_mut_ptr())
+        };
+
+        if err != 0 {
+            Err(error)
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl Drop for AudioSource {
+    fn drop(&mut self) {
+        unsafe {
+            FFMS_DestroyAudioSource(self.audio_source);
+        }
+    }
+}
