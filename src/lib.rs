@@ -3,21 +3,21 @@
 
 pub mod audio;
 pub mod frame;
-pub mod video;
-pub mod resample;
 pub mod index;
+pub mod resample;
 pub mod track;
+pub mod video;
 
 mod utility;
 
 use ffms2_sys::*;
 
 use std::fmt;
-use std::str;
 use std::mem;
 use std::ptr;
+use std::str;
 
-errors!(Errors, FFMS_Errors, ffms_errors,
+errors!(Errors, FFMS_Errors,
         (
             ERROR_SUCCESS: "Success.",
             ERROR_INDEX: "Error Index.",
@@ -46,13 +46,20 @@ errors!(Errors, FFMS_Errors, ffms_errors,
         )
 );
 
-errors!(IndexErrorHandling, FFMS_IndexErrorHandling, idx_errors,
-       (
+create_enum!(
+    IndexErrorHandling,
+    FFMS_IndexErrorHandling,
+    idx_errors,
+    (IEH_ABORT, IEH_CLEAR_TRACK, IEH_STOP_TRACK, IEH_IGNORE)
+);
+
+display!(IndexErrorHandling,
+         (
            IEH_ABORT: "Index error aborting.",
            IEH_CLEAR_TRACK: "Index error clear track.",
            IEH_STOP_TRACK: "Index error stop track.",
            IEH_IGNORE: "Index error ignore.",
-       )
+         )
 );
 
 create_enum!(
@@ -62,10 +69,8 @@ create_enum!(
     (FMT_U8, FMT_S16, FMT_S32, FMT_FLT, FMT_DBL)
 );
 
-create_enum!(
+simple_enum!(
     LogLevels,
-    FFMS_LogLevels,
-    log_levels,
     (
         LOG_QUIET,
         LOG_PANIC,
@@ -92,7 +97,10 @@ impl Default for Error {
             Buffer: ptr::null_mut(),
             BufferSize: 0,
         };
-        let mut ffms = Error{ error, buffer: [0; 1024] };
+        let mut ffms = Error {
+            error,
+            buffer: [0; 1024],
+        };
         ffms.error.Buffer = ffms.buffer.as_mut_ptr() as *mut i8;
         ffms.error.BufferSize = mem::size_of_val(&ffms.buffer) as i32;
         ffms
@@ -125,7 +133,9 @@ impl Log {
     }
 
     pub fn SetLogLevel(Level: i32) {
-        unsafe { FFMS_SetLogLevel(Level); }
+        unsafe {
+            FFMS_SetLogLevel(Level);
+        }
     }
 }
 
@@ -133,7 +143,9 @@ pub struct FFMS2;
 
 impl FFMS2 {
     pub fn new() {
-        unsafe{ FFMS_Init(0, 0); }
+        unsafe {
+            FFMS_Init(0, 0);
+        }
     }
 
     pub fn GetVersion() -> usize {
@@ -143,7 +155,9 @@ impl FFMS2 {
 
 impl Drop for FFMS2 {
     fn drop(&mut self) {
-        unsafe{ FFMS_Deinit(); }
+        unsafe {
+            FFMS_Deinit();
+        }
     }
 }
 

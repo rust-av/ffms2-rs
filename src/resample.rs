@@ -1,5 +1,5 @@
-use crate::*;
 use crate::audio::MatrixEncoding;
+use crate::*;
 
 create_enum!(
     ResampleFilterType,
@@ -120,7 +120,9 @@ create_struct!(
 
 impl ResampleOptions {
     pub(crate) fn create_struct(resample: &FFMS_ResampleOptions) -> Self {
-        ResampleOptions { resample: *resample }
+        ResampleOptions {
+            resample: *resample,
+        }
     }
 
     pub(crate) fn as_ptr(&self) -> *const FFMS_ResampleOptions {

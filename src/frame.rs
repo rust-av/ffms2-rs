@@ -1,11 +1,11 @@
-use crate::*;
 use crate::video::*;
+use crate::*;
 
 use ffms2_sys::*;
 
-use std::ptr;
 use std::ffi::CString;
 use std::mem;
+use std::ptr;
 
 create_enum!(
     Resizers,
@@ -26,10 +26,8 @@ create_enum!(
     )
 );
 
-create_enum!(
+simple_enum!(
     ChromaLocations,
-    FFMS_ChromaLocations,
-    chroma_locations,
     (
         LOC_UNSPECIFIED,
         LOC_LEFT,
@@ -56,6 +54,14 @@ create_struct!(
     )
 );
 
+impl FrameInfo {
+    pub(crate) fn create_struct(frame_info: &FFMS_FrameInfo) -> Self {
+        FrameInfo {
+            frame_info: *frame_info,
+        }
+    }
+}
+
 set_struct!(Frame, frame, FFMS_Frame);
 
 default_struct!(
@@ -80,8 +86,21 @@ default_struct!(
         ColorRange,
     ),
     (
-        [ptr::null(); 4], [0; 4], 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0
+        [ptr::null(); 4],
+        [0; 4],
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
     ),
     (
         (cfg(feature = "ffms2-2-21-0"), ColorPrimaries, 0),
@@ -151,8 +170,9 @@ set_params!(
         ColorSpace,
         ColorRange,
     ),
-    (   usize, usize, usize, usize, usize, usize, usize,
-        usize, usize, usize, i8, usize, usize
+    (
+        usize, usize, usize, usize, usize, usize, usize, usize, usize, usize,
+        i8, usize, usize
     ),
     (
         EncodedWidth as i32,
@@ -281,7 +301,10 @@ impl Frame {
         }
     }
 
-    pub fn GetFrameByTime(V: &mut VideoSource, Time: f64) -> Result<Self, Error> {
+    pub fn GetFrameByTime(
+        V: &mut VideoSource,
+        Time: f64,
+    ) -> Result<Self, Error> {
         let mut error: Error = Default::default();
 
         let c_frame = unsafe {

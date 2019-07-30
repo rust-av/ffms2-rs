@@ -1,13 +1,21 @@
 extern crate paste;
 
 #[macro_export]
-macro_rules! create_enum {
-    ($enum:ident, $type:ident, $func_name:ident,
-    ($($field_name:ident),*$(,)*)) => {
+macro_rules! simple_enum {
+    ($enum:ident, ($($field_name:ident),*$(,)*)) => {
         #[derive(Clone, Copy, Debug)]
         pub enum $enum {
             $($field_name,)*
         }
+    }
+}
+
+#[macro_export]
+macro_rules! create_enum {
+    ($enum:ident, $type:ident, $func_name:ident,
+    ($($field_name:ident),*$(,)*)) => {
+
+        simple_enum!($enum, ($($field_name),*));
 
         impl $enum {
             paste::item! {
@@ -25,24 +33,9 @@ macro_rules! create_enum {
 }
 
 #[macro_export]
-macro_rules! errors {
-    ($enum:ident, $type:ident, $func_name:ident,
-    ($($field_name:ident: $field_err:expr),*$(,)*)) => {
-
-        create_enum!($enum, $type, $func_name, ($($field_name,)*));
-
-        impl fmt::Display for $enum {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                let v = match self {
-                    $(
-                        $enum::$field_name => $field_err,
-                    )*
-                };
-
-                write!(f, "{}", v)
-            }
-        }
-
+macro_rules! from_i32 {
+    ($enum:ident, $type:ident,
+    ($($field_name:ident),*$(,)*)) => {
         impl $enum {
             paste::item! {
                 pub(crate) fn from_i32(e: i32) -> Self {
@@ -55,6 +48,37 @@ macro_rules! errors {
                 }
             }
         }
+    }
+}
+
+#[macro_export]
+macro_rules! display {
+    ($enum:ident, ($($field_name:ident: $field_err:expr),*$(,)*)) => {
+        impl fmt::Display for $enum {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                let v = match self {
+                    $(
+                        $enum::$field_name => $field_err,
+                    )*
+                };
+
+                write!(f, "{}", v)
+            }
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! errors {
+    ($enum:ident, $type:ident,
+    ($($field_name:ident: $field_err:expr),*$(,)*)) => {
+
+        simple_enum!($enum, ($($field_name,)*));
+
+        display!($enum, ($($field_name: $field_err,)*));
+
+        from_i32!($enum, $type, ($($field_name,)*));
+
     }
 }
 

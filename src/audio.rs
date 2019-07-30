@@ -9,10 +9,8 @@ use std::ffi::CString;
 use std::mem;
 use std::path::PathBuf;
 
-create_enum!(
+simple_enum!(
     AudioChannel,
-    FFMS_AudioChannel,
-    audio_channel,
     (
         CH_FRONT_LEFT,
         CH_FRONT_RIGHT,
@@ -37,10 +35,8 @@ create_enum!(
     )
 );
 
-create_enum!(
+simple_enum!(
     AudioDelay,
-    FFMS_AudioDelayModes,
-    audio_delay_modes,
     (DELAY_NO_SHIFT, DELAY_TIME_ZERO, DELAY_FIRST_VIDEO_TRACK)
 );
 
@@ -149,7 +145,9 @@ impl AudioSource {
     pub fn GetAudioProperties(&self) -> AudioProperties {
         let audio_prop = unsafe { FFMS_GetAudioProperties(self.audio_source) };
         let ref_audio = unsafe {
-            mem::transmute::<*const FFMS_AudioProperties, &FFMS_AudioProperties>(audio_prop)
+            mem::transmute::<*const FFMS_AudioProperties, &FFMS_AudioProperties>(
+                audio_prop,
+            )
         };
 
         AudioProperties {
@@ -157,7 +155,11 @@ impl AudioSource {
         }
     }
 
-    pub fn GetAudio<T>(&self, Start: usize, Count: usize) -> Result<Vec<T>, Error> {
+    pub fn GetAudio<T>(
+        &self,
+        Start: usize,
+        Count: usize,
+    ) -> Result<Vec<T>, Error> {
         let mut Buf: Vec<T> = Vec::new();
         let mut error: Error = Default::default();
         let audio_prop = unsafe { FFMS_GetAudioProperties(self.audio_source) };
@@ -188,17 +190,26 @@ impl AudioSource {
     pub fn CreateResampleOptions(&self) -> ResampleOptions {
         let res_opt = unsafe { FFMS_CreateResampleOptions(self.audio_source) };
         let ref_res = unsafe {
-            mem::transmute::<*const FFMS_ResampleOptions, &FFMS_ResampleOptions>(res_opt)
+            mem::transmute::<*const FFMS_ResampleOptions, &FFMS_ResampleOptions>(
+                res_opt,
+            )
         };
 
         ResampleOptions::create_struct(ref_res)
     }
 
     #[cfg(feature = "ffms2-2-15-4")]
-    pub fn SetOutputFormatA(&self, options: &ResampleOptions) -> Result<(), Error> {
+    pub fn SetOutputFormatA(
+        &self,
+        options: &ResampleOptions,
+    ) -> Result<(), Error> {
         let mut error: Error = Default::default();
         let err = unsafe {
-            FFMS_SetOutputFormatA(self.audio_source, options.as_ptr(), error.as_mut_ptr())
+            FFMS_SetOutputFormatA(
+                self.audio_source,
+                options.as_ptr(),
+                error.as_mut_ptr(),
+            )
         };
 
         if err != 0 {
@@ -206,6 +217,10 @@ impl AudioSource {
         } else {
             Ok(())
         }
+    }
+
+    pub(crate) fn as_mut_ptr(&mut self) -> *mut FFMS_AudioSource {
+        self.audio_source
     }
 }
 

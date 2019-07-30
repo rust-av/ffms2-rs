@@ -5,7 +5,6 @@ use crate::*;
 use ffms2_sys::*;
 
 use std::ffi::CString;
-use std::mem;
 use std::path::PathBuf;
 
 create_enum!(
@@ -21,10 +20,8 @@ create_enum!(
     )
 );
 
-create_enum!(
+simple_enum!(
     Stereo3DType,
-    FFMS_Stereo3DType,
-    stereo3d_type,
     (
         S3D_TYPE_2D,
         S3D_TYPE_SIDEBYSIDE,
@@ -37,12 +34,7 @@ create_enum!(
     )
 );
 
-create_enum!(
-    Stereo3DFlags,
-    FFMS_Stereo3DFlags,
-    stereo3d_flags,
-    (S3D_FLAGS_INVERT)
-);
+simple_enum!(Stereo3DFlags, (S3D_FLAGS_INVERT));
 
 create_enum!(
     ColorRanges,
@@ -150,8 +142,8 @@ set_params!(
         LastTime,
     ),
     (
-        usize, usize, usize, usize, usize, usize, usize, usize, usize, usize, usize, usize, usize,
-        usize, f64, f64
+        usize, usize, usize, usize, usize, usize, usize, usize, usize, usize,
+        usize, usize, usize, usize, f64, f64
     ),
     (
         FPSDenominator as i32,
@@ -306,9 +298,7 @@ impl VideoSource {
 
     pub fn GetVideoProperties(&self) -> VideoProperties {
         let video_prop = unsafe { FFMS_GetVideoProperties(self.video_source) };
-        let ref_video = unsafe {
-            mem::transmute::<*const FFMS_VideoProperties, &FFMS_VideoProperties>(video_prop)
-        };
+        let ref_video = unsafe { &*video_prop };
 
         VideoProperties {
             video_properties: *ref_video,
