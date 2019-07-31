@@ -23,7 +23,6 @@ ffms2-2-30-0 = ["ffms2-2-27-0"]
 ffms2-2-31-0 = ["ffms2-2-30-0"]
 
 default = ["ffms2-2-31-0"]
-foo = []
 
 [workspace]
 members = ["ffms2-sys"]

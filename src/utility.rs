@@ -20,12 +20,11 @@ macro_rules! create_enum {
         impl $enum {
             paste::item! {
                 pub(crate) fn [<to_ $func_name>](&self) -> $type {
-                    let pass = match self {
+                    match self {
                         $(
                             $enum::$field_name => $type::[<FFMS_ $field_name>],
                         )*
-                    };
-                pass
+                    }
                 }
             }
         }

@@ -5,7 +5,6 @@ use crate::video::*;
 use crate::*;
 
 use std::ffi::CString;
-use std::mem;
 use std::path::PathBuf;
 
 create_enum!(
@@ -99,19 +98,13 @@ impl Track {
 
     pub fn FrameInfo(&self, Frame: usize) -> FrameInfo {
         let res_frame = unsafe { FFMS_GetFrameInfo(self.track, Frame as i32) };
-        let ref_frame = unsafe {
-            mem::transmute::<*const FFMS_FrameInfo, &FFMS_FrameInfo>(res_frame)
-        };
+        let ref_frame = unsafe { &*res_frame };
         FrameInfo::create_struct(ref_frame)
     }
 
     pub fn TimeBase(&self) -> TrackTimeBase {
         let res_track = unsafe { FFMS_GetTimeBase(self.track) };
-        let ref_track = unsafe {
-            mem::transmute::<*const FFMS_TrackTimeBase, &FFMS_TrackTimeBase>(
-                res_track,
-            )
-        };
+        let ref_track = unsafe { &*res_track };
         TrackTimeBase {
             track_time_base: *ref_track,
         }

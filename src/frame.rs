@@ -4,7 +4,6 @@ use crate::*;
 use ffms2_sys::*;
 
 use std::ffi::CString;
-use std::mem;
 use std::ptr;
 
 create_enum!(
@@ -293,9 +292,7 @@ impl Frame {
         if c_frame.is_null() {
             Err(error)
         } else {
-            let ref_frame = unsafe {
-                mem::transmute::<*const FFMS_Frame, &FFMS_Frame>(c_frame)
-            };
+            let ref_frame = unsafe { &*c_frame };
 
             Ok(Frame { frame: *ref_frame })
         }
@@ -314,9 +311,7 @@ impl Frame {
         if c_frame.is_null() {
             Err(error)
         } else {
-            let ref_frame = unsafe {
-                mem::transmute::<*const FFMS_Frame, &FFMS_Frame>(c_frame)
-            };
+            let ref_frame = unsafe { &*c_frame };
 
             Ok(Frame { frame: *ref_frame })
         }

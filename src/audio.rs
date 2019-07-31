@@ -6,7 +6,6 @@ use ffms2_sys::*;
 
 use std::ffi::c_void;
 use std::ffi::CString;
-use std::mem;
 use std::path::PathBuf;
 
 simple_enum!(
@@ -144,11 +143,7 @@ impl AudioSource {
 
     pub fn GetAudioProperties(&self) -> AudioProperties {
         let audio_prop = unsafe { FFMS_GetAudioProperties(self.audio_source) };
-        let ref_audio = unsafe {
-            mem::transmute::<*const FFMS_AudioProperties, &FFMS_AudioProperties>(
-                audio_prop,
-            )
-        };
+        let ref_audio = unsafe { &*audio_prop };
 
         AudioProperties {
             audio_properties: *ref_audio,
@@ -189,11 +184,7 @@ impl AudioSource {
     #[cfg(feature = "ffms2-2-15-4")]
     pub fn CreateResampleOptions(&self) -> ResampleOptions {
         let res_opt = unsafe { FFMS_CreateResampleOptions(self.audio_source) };
-        let ref_res = unsafe {
-            mem::transmute::<*const FFMS_ResampleOptions, &FFMS_ResampleOptions>(
-                res_opt,
-            )
-        };
+        let ref_res = unsafe { &*res_opt };
 
         ResampleOptions::create_struct(ref_res)
     }

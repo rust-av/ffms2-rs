@@ -58,9 +58,9 @@ impl Index {
         }
     }
 
-    pub fn ReadIndexFromBuffer(Buffer: &Vec<u8>) -> Result<Self, Error> {
+    pub fn ReadIndexFromBuffer(Buffer: &[u8]) -> Result<Self, Error> {
         let mut error: Error = Default::default();
-        let size = mem::size_of_val(Buffer.as_slice());
+        let size = mem::size_of_val(Buffer);
         let index = unsafe {
             FFMS_ReadIndexFromBuffer(Buffer.as_ptr(), size, error.as_mut_ptr())
         };
@@ -131,13 +131,13 @@ impl Index {
 
     pub fn FirstTrackOfType(
         &self,
-        TrackType: &TrackType,
+        TrackType: TrackType,
     ) -> Result<usize, Error> {
         let mut error: Error = Default::default();
         let num_tracks = unsafe {
             FFMS_GetFirstTrackOfType(
                 self.index,
-                TrackType::to_track_type(TrackType) as i32,
+                TrackType::to_track_type(&TrackType) as i32,
                 error.as_mut_ptr(),
             )
         };
@@ -150,13 +150,13 @@ impl Index {
 
     pub fn FirstIndexedTrackOfType(
         &self,
-        TrackType: &TrackType,
+        TrackType: TrackType,
     ) -> Result<usize, Error> {
         let mut error: Error = Default::default();
         let num_tracks = unsafe {
             FFMS_GetFirstIndexedTrackOfType(
                 self.index,
-                TrackType::to_track_type(TrackType) as i32,
+                TrackType::to_track_type(&TrackType) as i32,
                 error.as_mut_ptr(),
             )
         };
@@ -228,10 +228,11 @@ impl Indexer {
     #[cfg(feature = "ffms2-2-21-0")]
     pub fn DoIndexing2(
         &self,
-        ErrorHandling: &IndexErrorHandling,
+        ErrorHandling: IndexErrorHandling,
     ) -> Result<Index, Error> {
         let mut error: Error = Default::default();
-        let handling = IndexErrorHandling::to_idx_errors(ErrorHandling) as i32;
+        let handling =
+            IndexErrorHandling::to_idx_errors(&ErrorHandling) as i32;
         let index = unsafe {
             FFMS_DoIndexing2(self.indexer, handling, error.as_mut_ptr())
         };
@@ -302,13 +303,12 @@ impl Indexer {
                 process::abort();
             }
 
-            mem::forget(ICPrivate);
             res.unwrap()
         }
 
         let ICPrivate = Box::new(CallbackData {
             callback: Box::new(callback),
-            value: value,
+            value,
         });
 
         unsafe {

@@ -273,11 +273,11 @@ impl VideoSource {
         Track: usize,
         Index: &Index,
         Threads: usize,
-        SeekMode: &SeekMode,
+        SeekMode: SeekMode,
     ) -> Result<Self, Error> {
         let source = CString::new(SourceFile.to_str().unwrap()).unwrap();
         let mut error: Error = Default::default();
-        let seek = SeekMode::to_seek_mode(SeekMode) as i32;
+        let seek = SeekMode::to_seek_mode(&SeekMode) as i32;
         let video_source = unsafe {
             FFMS_CreateVideoSource(
                 source.as_ptr(),
@@ -309,11 +309,11 @@ impl VideoSource {
     pub fn SetInputFormatV(
         &self,
         ColorSpace: usize,
-        ColorRange: &ColorRanges,
+        ColorRange: ColorRanges,
         PixelFormat: usize,
     ) -> Result<(), Error> {
         let mut error: Error = Default::default();
-        let colorange = ColorRanges::to_color_ranges(ColorRange) as i32;
+        let colorange = ColorRanges::to_color_ranges(&ColorRange) as i32;
         let err = unsafe {
             FFMS_SetInputFormatV(
                 self.video_source,
@@ -343,10 +343,10 @@ impl VideoSource {
         TargetFormats: &mut Vec<i32>,
         Width: usize,
         Height: usize,
-        Resizer: &Resizers,
+        Resizer: Resizers,
     ) -> Result<(), Error> {
         let mut error: Error = Default::default();
-        let resize = Resizers::to_resizers(Resizer) as i32;
+        let resize = Resizers::to_resizers(&Resizer) as i32;
         TargetFormats.push(-1);
         let err = unsafe {
             FFMS_SetOutputFormatV2(

@@ -142,13 +142,13 @@ impl Log {
 pub struct FFMS2;
 
 impl FFMS2 {
-    pub fn new() {
+    pub fn Init() {
         unsafe {
             FFMS_Init(0, 0);
         }
     }
 
-    pub fn GetVersion() -> usize {
+    pub fn Version() -> usize {
         unsafe { FFMS_GetVersion() as usize }
     }
 }
