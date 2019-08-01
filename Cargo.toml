@@ -12,6 +12,9 @@ ffms2-sys = { path = "ffms2-sys" }
 cfg-if = "0.1"
 paste = "0.1"
 
+[dev-dependencies]
+structopt = "0.2"
+
 [features]
 ffms2-2-15-3 = []
 ffms2-2-15-4 = ["ffms2-2-15-3"]
