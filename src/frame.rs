@@ -54,6 +54,9 @@ create_struct!(
 );
 
 impl FrameInfo {
+    pub fn KeyFrame(&self) -> usize {
+        self.frame_info.KeyFrame as usize
+    }
     pub(crate) fn create_struct(frame_info: &FFMS_FrameInfo) -> Self {
         FrameInfo {
             frame_info: *frame_info,

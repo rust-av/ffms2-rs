@@ -47,7 +47,7 @@ create_struct!(
 macro_rules! track_error {
     ($track:expr, $num_frames:ident) => {
         let $num_frames = unsafe { FFMS_GetNumFrames($track) };
-        if $num_frames != 0 {
+        if $num_frames < 0 {
             panic!("Error creating the track");
         }
     };

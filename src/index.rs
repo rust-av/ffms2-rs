@@ -11,12 +11,6 @@ use std::panic;
 use std::path::PathBuf;
 use std::process;
 
-/* External Function example */
-/*pub fn UpdateProgress<T>(Current: usize, Total: usize, ICPrivate: T) -> usize {
-    println!("Indexing, please wait...");
-    0
-}*/
-
 pub struct Index {
     index: *mut FFMS_Index,
     buffer: Vec<u8>,
@@ -179,7 +173,9 @@ impl Index {
 impl Drop for Index {
     fn drop(&mut self) {
         unsafe {
-            FFMS_FreeIndexBuffer(&mut self.buffer.as_mut_ptr());
+            if !self.buffer.is_empty() {
+                FFMS_FreeIndexBuffer(&mut self.buffer.as_mut_ptr());
+            }
             FFMS_DestroyIndex(self.index);
         }
     }
@@ -219,10 +215,16 @@ impl Indexer {
         unsafe { FFMS_GetNumTracksI(self.indexer) as usize }
     }
 
-    pub fn TrackkTypeI(&self, Track: usize) -> TrackType {
+    pub fn TrackTypeI(&self, Track: usize) -> TrackType {
         let track_type =
             unsafe { FFMS_GetTrackTypeI(self.indexer, Track as i32) };
         TrackType::from_i32(track_type)
+    }
+
+    pub fn CancelIndexing(&self) {
+        unsafe {
+            FFMS_CancelIndexing(self.indexer);
+        }
     }
 
     #[cfg(feature = "ffms2-2-21-0")]
@@ -260,11 +262,11 @@ impl Indexer {
     }
 
     #[cfg(feature = "ffms2-2-21-0")]
-    pub fn TrackTypeIndexSettings(&self, TrackType: usize, Index: usize) {
+    pub fn TrackTypeIndexSettings(&self, TrackType: TrackType, Index: usize) {
         unsafe {
             FFMS_TrackTypeIndexSettings(
                 self.indexer,
-                TrackType as i32,
+                TrackType::to_track_type(&TrackType) as i32,
                 Index as i32,
                 0,
             );
@@ -272,28 +274,29 @@ impl Indexer {
     }
 
     #[cfg(feature = "ffms2-2-21-0")]
-    pub fn ProgressCallback<F, T>(&self, callback: F, value: T)
+    pub fn ProgressCallback<'a, F>(&self, callback: F, value: &'a mut usize)
     where
-        F: FnMut(usize, usize, T) -> usize + 'static,
+        F: FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,
     {
-        struct CallbackData<T> {
-            callback: Box<FnMut(usize, usize, T) -> usize + 'static>,
-            value: T,
+        struct CallbackData<'a> {
+            callback: Box<
+                FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,
+            >,
+            value: &'a mut usize,
         }
 
-        unsafe extern "C" fn IndexCallback<T>(
+        unsafe extern "C" fn IndexCallback(
             Current: i64,
             Total: i64,
             ICPrivate: *mut c_void,
         ) -> i32 {
-            let mut user_data =
-                Box::from_raw(ICPrivate as *mut CallbackData<T>);
+            let mut user_data = Box::from_raw(ICPrivate as *mut CallbackData);
 
             let closure = panic::AssertUnwindSafe(|| {
                 (user_data.callback)(
                     Current as usize,
                     Total as usize,
-                    user_data.value,
+                    Some(user_data.value),
                 ) as i32
             });
 
@@ -302,6 +305,8 @@ impl Indexer {
             if res.is_err() {
                 process::abort();
             }
+
+            Box::leak(user_data);
 
             res.unwrap()
         }
@@ -314,17 +319,9 @@ impl Indexer {
         unsafe {
             FFMS_SetProgressCallback(
                 self.indexer,
-                Some(IndexCallback::<T>),
+                Some(IndexCallback),
                 Box::into_raw(ICPrivate) as *mut c_void,
             )
-        }
-    }
-}
-
-impl Drop for Indexer {
-    fn drop(&mut self) {
-        unsafe {
-            FFMS_CancelIndexing(self.indexer);
         }
     }
 }

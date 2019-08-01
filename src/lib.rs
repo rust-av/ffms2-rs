@@ -69,8 +69,26 @@ create_enum!(
     (FMT_U8, FMT_S16, FMT_S32, FMT_FLT, FMT_DBL)
 );
 
-simple_enum!(
+create_enum!(
     LogLevels,
+    FFMS_LogLevels,
+    log_levels,
+    (
+        LOG_QUIET,
+        LOG_PANIC,
+        LOG_FATAL,
+        LOG_ERROR,
+        LOG_WARNING,
+        LOG_INFO,
+        LOG_VERBOSE,
+        LOG_DEBUG,
+        LOG_TRACE,
+    )
+);
+
+from_i32!(
+    LogLevels,
+    FFMS_LogLevels,
     (
         LOG_QUIET,
         LOG_PANIC,
@@ -107,7 +125,7 @@ impl Default for Error {
     }
 }
 
-impl fmt::Display for Error {
+impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -128,13 +146,14 @@ impl Error {
 pub struct Log;
 
 impl Log {
-    pub fn GetLogLevel() -> i32 {
-        unsafe { FFMS_GetLogLevel() }
+    pub fn GetLogLevel() -> LogLevels {
+        let log = unsafe { FFMS_GetLogLevel() };
+        LogLevels::from_i32(log)
     }
 
-    pub fn SetLogLevel(Level: i32) {
+    pub fn SetLogLevel(Level: LogLevels) {
         unsafe {
-            FFMS_SetLogLevel(Level);
+            FFMS_SetLogLevel(LogLevels::to_log_levels(&Level) as i32);
         }
     }
 }
