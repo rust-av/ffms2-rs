@@ -4,8 +4,8 @@
 
 ## TODO
 - [x] Simple bindings
-- [ ] Safe abstraction
-- [ ] Examples
+- [x] Safe abstraction
+- [x] Examples
 
 ## License
 
