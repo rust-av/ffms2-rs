@@ -58,11 +58,11 @@ fn update_progress(
 ) -> usize {
     let percentage = ((current as f32 / total as f32) * 100.0) as usize;
 
-    if let Some(prive) = private {
-        if percentage <= *prive {
+    if let Some(percent) = private {
+        if percentage <= *percent {
             return 0;
         }
-        *prive = percentage;
+        *percent = percentage;
     }
 
     println!("Indexing, please wait... {}%", percentage);
@@ -179,15 +179,15 @@ fn main() {
     let cache_file = if let Some(out) = &args.output_file {
         out.to_path_buf()
     } else {
-        let file_name = args
+        let file_stem = args
             .input_file
             .as_path()
             .file_stem()
             .unwrap()
             .to_str()
-            .unwrap()
-            .to_string();
-        Path::new(&(file_name + ".ffindex")).to_path_buf()
+            .unwrap();
+        let filename = format!("{}.ffindex", file_stem);
+        Path::new(&filename).to_path_buf()
     };
 
     FFMS2::Init();
