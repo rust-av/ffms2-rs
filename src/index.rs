@@ -280,7 +280,7 @@ impl Indexer {
     {
         struct CallbackData<'a> {
             callback: Box<
-                FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,
+              dyn FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,
             >,
             value: &'a mut usize,
         }

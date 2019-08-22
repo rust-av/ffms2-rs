@@ -179,12 +179,3 @@ impl Drop for FFMS2 {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn ffms_errors() {
-        assert_eq!(2 + 2, 4);
-    }
-}
