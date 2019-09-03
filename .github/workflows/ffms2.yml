@@ -1,0 +1,33 @@
+name: ffms2
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install ffmpeg
+      env:
+        FFMPEG_PKG: libavcodec-dev libavformat-dev libavdevice-dev zlib1g-dev
+      run: |
+        sudo apt-get install -y $FFMPEG_PKG
+    - name: Install ffms2
+      run: |
+        git clone https://github.com/FFMS/ffms2.git
+        cd ffms2
+        ./autogen.sh --prefix=$HOME/ffms2_dir
+        make
+        make install
+    - name: Run tests
+      run: |
+        export PKG_CONFIG_PATH=$HOME/ffms2_dir/lib/pkgconfig:$PKG_CONFIG_PATH
+        cargo test --all-features
