@@ -56,7 +56,11 @@ impl Index {
         let mut error: Error = Default::default();
         let size = mem::size_of_val(Buffer);
         let index = unsafe {
-            FFMS_ReadIndexFromBuffer(Buffer.as_ptr(), size, error.as_mut_ptr())
+            FFMS_ReadIndexFromBuffer(
+                Buffer.as_ptr(),
+                size as u64,
+                error.as_mut_ptr(),
+            )
         };
 
         if index.is_null() {
@@ -280,7 +284,7 @@ impl Indexer {
     {
         struct CallbackData<'a> {
             callback: Box<
-              dyn FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,
+                dyn FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,
             >,
             value: &'a mut usize,
         }
