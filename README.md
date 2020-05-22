@@ -1,6 +1,6 @@
 # ffms2-rs
 
-[![Actions Status](https://github.com/Luni-4/ffms2-rs/workflows/ffms2/badge.svg)](https://github.com/Luni-4/ffms2-rs/actions)
+[![Actions Status](https://github.com/rust-av/ffms2-rs/workflows/ffms2/badge.svg)](https://github.com/rust-av/ffms2-rs/actions)
 
 [ffms2](https://github.com/FFMS/ffms2) bindings for Rust.
 
