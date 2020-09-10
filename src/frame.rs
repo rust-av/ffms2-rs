@@ -86,6 +86,20 @@ default_struct!(
         PictType,
         ColorSpace,
         ColorRange,
+        ColorPrimaries,
+        TransferCharateristics,
+        ChromaLocation,
+        HasMasteringDisplayPrimaries,
+        MasteringDisplayPrimariesX,
+        MasteringDisplayPrimariesY,
+        MasteringDisplayWhitePointX,
+        MasteringDisplayWhitePointY,
+        HasMasteringDisplayLuminance,
+        MasteringDisplayMinLuminance,
+        MasteringDisplayMaxLuminance,
+        HasContentLightLevel,
+        ContentLightLevelMax,
+        ContentLightLevelAverage
     ),
     (
         [ptr::null(); 4],
@@ -102,55 +116,21 @@ default_struct!(
         0,
         0,
         0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        [0.0; 3],
+        [0.0; 3],
+        0.0,
+        0.0,
+        0,
+        0.0,
+        0.0,
+        0,
+        0,
         0
-    ),
-    (
-        (cfg(feature = "ffms2-2-21-0"), ColorPrimaries, 0),
-        (cfg(feature = "ffms2-2-21-0"), TransferCharateristics, 0),
-        (cfg(feature = "ffms2-2-21-0"), ChromaLocation, 0),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            HasMasteringDisplayPrimaries,
-            0
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayPrimariesX,
-            [0.0; 3]
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayPrimariesY,
-            [0.0; 3]
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayWhitePointX,
-            0.0
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayWhitePointY,
-            0.0
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            HasMasteringDisplayLuminance,
-            0
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayMinLuminance,
-            0.0
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayMaxLuminance,
-            0.0
-        ),
-        (cfg(feature = "ffms2-2-27-0"), HasContentLightLevel, 0),
-        (cfg(feature = "ffms2-2-27-0"), ContentLightLevelMax, 0),
-        (cfg(feature = "ffms2-2-27-0"), ContentLightLevelAverage, 0)
     )
 );
 
@@ -171,10 +151,25 @@ set_params!(
         PictType,
         ColorSpace,
         ColorRange,
+        ColorPrimaries,
+        TransferCharateristics,
+        ChromaLocation,
+        HasMasteringDisplayPrimaries,
+        MasteringDisplayPrimariesX,
+        MasteringDisplayPrimariesY,
+        MasteringDisplayWhitePointX,
+        MasteringDisplayWhitePointY,
+        HasMasteringDisplayLuminance,
+        MasteringDisplayMinLuminance,
+        MasteringDisplayMaxLuminance,
+        HasContentLightLevel,
+        ContentLightLevelMax,
+        ContentLightLevelAverage
     ),
     (
         usize, usize, usize, usize, usize, usize, usize, usize, usize, usize,
-        i8, usize, usize
+        i8, usize, usize, usize, usize, usize, usize, &[f64; 3], &[f64; 3],
+        f64, f64, usize, f64, f64, usize, usize, usize
     ),
     (
         EncodedWidth as i32,
@@ -190,97 +185,20 @@ set_params!(
         PictType as i8,
         ColorSpace as i32,
         ColorRange as i32,
-    )
-);
-
-set_feature_params!(
-    Frame,
-    frame,
-    (
-        (
-            cfg(feature = "ffms2-2-21-0"),
-            ColorPrimaries,
-            usize,
-            ColorPrimaries as i32
-        ),
-        (
-            cfg(feature = "ffms2-2-21-0"),
-            TransferCharateristics,
-            usize,
-            TransferCharateristics as i32
-        ),
-        (
-            cfg(feature = "ffms2-2-21-0"),
-            ChromaLocation,
-            usize,
-            ChromaLocation as i32
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            HasMasteringDisplayPrimaries,
-            usize,
-            HasMasteringDisplayPrimaries as i32
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayPrimariesX,
-            &[f64; 3],
-            *MasteringDisplayPrimariesX as [f64; 3]
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayPrimariesY,
-            &[f64; 3],
-            *MasteringDisplayPrimariesY as [f64; 3]
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayWhitePointX,
-            f64,
-            MasteringDisplayWhitePointX as f64
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayWhitePointY,
-            f64,
-            MasteringDisplayWhitePointY as f64
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            HasMasteringDisplayLuminance,
-            usize,
-            HasMasteringDisplayLuminance as i32
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayMinLuminance,
-            f64,
-            MasteringDisplayMinLuminance as f64
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            MasteringDisplayMaxLuminance,
-            f64,
-            MasteringDisplayMaxLuminance as f64
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            HasContentLightLevel,
-            usize,
-            HasContentLightLevel as i32
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            ContentLightLevelMax,
-            usize,
-            ContentLightLevelMax as u32
-        ),
-        (
-            cfg(feature = "ffms2-2-27-0"),
-            ContentLightLevelAverage,
-            usize,
-            ContentLightLevelAverage as u32
-        )
+        ColorPrimaries as i32,
+        TransferCharateristics as i32,
+        ChromaLocation as i32,
+        HasMasteringDisplayPrimaries as i32,
+        *MasteringDisplayPrimariesX as [f64; 3],
+        *MasteringDisplayPrimariesY as [f64; 3],
+        MasteringDisplayWhitePointX as f64,
+        MasteringDisplayWhitePointY as f64,
+        HasMasteringDisplayLuminance as i32,
+        MasteringDisplayMinLuminance as f64,
+        MasteringDisplayMaxLuminance as f64,
+        HasContentLightLevel as i32,
+        ContentLightLevelMax as u32,
+        ContentLightLevelAverage as u32
     )
 );
 

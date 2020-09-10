@@ -94,17 +94,12 @@ macro_rules! set_struct {
 macro_rules! default_struct {
     ($struct:ident, $param:ident, $type:tt,
      ($($field_name:ident),*$(,)*),
-     ($($field_default_expr:expr),*$(,)*),
-     ($(($feature:meta, $feature_name:ident, $feature_expr:expr)),*$(,)*))
+     ($($field_default_expr:expr),*$(,)*))
      => {
       impl Default for $struct {
             fn default() -> Self {
                 let $param = $type {
                     $($field_name: $field_default_expr,)*
-                    $(
-                        #[$feature]
-                        $feature_name: $feature_expr,
-                    )*
                 };
                 $struct{ $param }
             }
@@ -125,8 +120,7 @@ macro_rules! create_struct {
 
         default_struct!($struct, $param, $type,
                        ($($field_name,)*),
-                       ($($field_default_expr,)*),
-                       ());
+                       ($($field_default_expr,)*));
 
         set_params!($struct, $param,
                    ($($field_name,)*),
@@ -147,24 +141,6 @@ macro_rules! set_params {
                     $(
                         pub fn [<set_ $field_name>](&mut self, $field_name: $field_type) {
                             self.$param.$field_name = paste::expr! { ($field_expr) }
-                        }
-                    )*
-                }
-            }
-       }
-}
-
-#[macro_export]
-macro_rules! set_feature_params {
-    ($struct:ident, $param:ident,
-    ($(($feat:meta, $feat_name:ident, $feat_type:ty, $feat_expr:expr)),*$(,)*))
-    => {
-            impl $struct {
-                paste::item! {
-                    $(
-                        #[$feat]
-                        pub fn [<set_ $feat_name>](&mut self, $feat_name: $feat_type) {
-                            self.$param.$feat_name = paste::expr! { ($feat_expr) }
                         }
                     )*
                 }

@@ -69,9 +69,9 @@ default_struct!(
         NumSamples,
         FirstTime,
         LastTime,
+        LastEndTime,
     ),
-    (0, 0, 0, 0, 0, 0, 0.0, 0.0),
-    ((cfg(feature = "ffms2-2-30-0"), LastEndTime, 0.0))
+    (0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0)
 );
 
 set_params!(
@@ -86,8 +86,9 @@ set_params!(
         NumSamples,
         FirstTime,
         LastTime,
+        LastEndTime,
     ),
-    (usize, usize, usize, usize, usize, usize, f64, f64),
+    (usize, usize, usize, usize, usize, usize, f64, f64, f64),
     (
         SampleFormat as i32,
         SampleRate as i32,
@@ -97,18 +98,8 @@ set_params!(
         NumSamples as i64,
         FirstTime as f64,
         LastTime as f64,
+        LastEndTime as f64,
     )
-);
-
-set_feature_params!(
-    AudioProperties,
-    audio_properties,
-    ((
-        cfg(feature = "ffms2-2-30-0"),
-        LastEndTime,
-        f64,
-        LastEndTime as f64
-    ))
 );
 
 pub struct AudioSource {
@@ -181,7 +172,6 @@ impl AudioSource {
         }
     }
 
-    #[cfg(feature = "ffms2-2-15-4")]
     pub fn CreateResampleOptions(&self) -> ResampleOptions {
         let res_opt = unsafe { FFMS_CreateResampleOptions(self.audio_source) };
         let ref_res = unsafe { &*res_opt };
@@ -189,7 +179,6 @@ impl AudioSource {
         ResampleOptions::create_struct(ref_res)
     }
 
-    #[cfg(feature = "ffms2-2-15-4")]
     pub fn SetOutputFormatA(
         &self,
         options: &ResampleOptions,

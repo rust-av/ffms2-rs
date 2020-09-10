@@ -231,7 +231,6 @@ impl Indexer {
         }
     }
 
-    #[cfg(feature = "ffms2-2-21-0")]
     pub fn DoIndexing2(
         &self,
         ErrorHandling: IndexErrorHandling,
@@ -253,7 +252,6 @@ impl Indexer {
         }
     }
 
-    #[cfg(feature = "ffms2-2-21-0")]
     pub fn TrackIndexSettings(&self, Track: usize, Index: usize) {
         unsafe {
             FFMS_TrackIndexSettings(
@@ -265,7 +263,6 @@ impl Indexer {
         }
     }
 
-    #[cfg(feature = "ffms2-2-21-0")]
     pub fn TrackTypeIndexSettings(&self, TrackType: TrackType, Index: usize) {
         unsafe {
             FFMS_TrackTypeIndexSettings(
@@ -277,7 +274,6 @@ impl Indexer {
         }
     }
 
-    #[cfg(feature = "ffms2-2-21-0")]
     pub fn ProgressCallback<'a, F>(&self, callback: F, value: &'a mut usize)
     where
         F: FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,

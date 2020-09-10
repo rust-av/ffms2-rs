@@ -130,7 +130,6 @@ impl ResampleOptions {
     }
 }
 
-#[cfg(feature = "ffms2-2-15-4")]
 impl Drop for ResampleOptions {
     fn drop(&mut self) {
         unsafe {
