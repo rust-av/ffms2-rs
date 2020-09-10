@@ -8,20 +8,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
+
     - name: Install ffmpeg
       env:
         FFMPEG_PKG: libavcodec-dev libavformat-dev libavdevice-dev zlib1g-dev
       run: |
+        sudo apt-get update
         sudo apt-get install -y $FFMPEG_PKG
+
     - name: Install ffms2
       run: |
         git clone --depth 1 https://github.com/FFMS/ffms2.git
         cd ffms2
-        ./autogen.sh --prefix=$HOME/ffms2_dir
-        make
+        ./autogen.sh --prefix=$HOME/ffms2-dir
         make install
+
+    - name: Set pkg-config variable
+      run: |
+        echo "::set-env name=PKG_CONFIG_PATH::$HOME/ffms2-dir/lib/pkgconfig"
+
     - name: Run tests
       run: |
-        export PKG_CONFIG_PATH=$HOME/ffms2_dir/lib/pkgconfig:$PKG_CONFIG_PATH
         cargo test --all-features
