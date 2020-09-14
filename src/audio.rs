@@ -111,7 +111,7 @@ impl AudioSource {
         SourceFile: &PathBuf,
         Track: usize,
         Index: &Index,
-        DelayMode: usize,
+        DelayMode: isize,
     ) -> Result<Self, Error> {
         let source = CString::new(SourceFile.to_str().unwrap()).unwrap();
         let mut error: Error = Default::default();
