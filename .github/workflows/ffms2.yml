@@ -3,7 +3,16 @@ name: ffms2
 on: [push, pull_request]
 
 jobs:
-  build:
+  format-and-tests:
+
+    strategy:
+      matrix:
+        conf:
+         - clippy-rustfmt
+         - ffms2-tests
+        include:
+         - conf: clippy-rustfmt
+           components: clippy, rustfmt
 
     runs-on: ubuntu-latest
 
@@ -24,10 +33,33 @@ jobs:
         ./autogen.sh --prefix=$HOME/ffms2-dir
         make install
 
+    - name: Install stable
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        components: ${{ matrix.clippy-rustfmt }}
+
     - name: Set pkg-config variable
       run: |
         echo "::set-env name=PKG_CONFIG_PATH::$HOME/ffms2-dir/lib/pkgconfig"
 
+    - name: Run rustfmt
+      if: matrix.conf == 'clippy-rustfmt'
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: -- --check
+
+    - name: Run clippy
+      if: matrix.conf == 'clippy-rustfmt'
+      uses: actions-rs/clippy-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        args: --all-targets --all-features -- -D warnings
+
     - name: Run tests
+      if: matrix.conf == 'ffms2-tests'
       run: |
         cargo test --all-features
