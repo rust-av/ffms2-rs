@@ -102,6 +102,32 @@ set_params!(
     )
 );
 
+impl AudioProperties {
+    pub fn NumSamples(&self) -> i64 {
+        self.audio_properties.NumSamples
+    }
+
+    pub fn SampleRate(&self) -> i32 {
+        self.audio_properties.SampleRate
+    }
+
+    pub fn Channels(&self) -> i32 {
+        self.audio_properties.Channels
+    }
+
+    pub fn SampleFormat(&self) -> i32 {
+        self.audio_properties.SampleFormat
+    }
+
+    pub fn ChannelLayout(&self) -> i64 {
+        self.audio_properties.ChannelLayout
+    }
+
+    pub fn BitsPerSample(&self) -> i32 {
+        self.audio_properties.BitsPerSample
+    }
+}
+
 pub struct AudioSource {
     audio_source: *mut FFMS_AudioSource,
 }
