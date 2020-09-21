@@ -6,6 +6,7 @@ use ffms2_sys::*;
 
 use std::ffi::c_void;
 use std::ffi::CString;
+use std::mem;
 use std::path::PathBuf;
 
 simple_enum!(
@@ -172,19 +173,26 @@ impl AudioSource {
         Start: usize,
         Count: usize,
     ) -> Result<Vec<T>, Error> {
-        let mut Buf: Vec<T> = Vec::new();
         let mut error: Error = Default::default();
-        let audio_prop = unsafe { FFMS_GetAudioProperties(self.audio_source) };
-        let num_sample = unsafe { (*audio_prop).NumSamples };
+        let audio_prop = self.GetAudioProperties();
+        let num_samples = audio_prop.NumSamples();
 
-        if Start as i64 > (num_sample - 1) || Count as i64 > (num_sample - 1) {
+        if Start as i64 > (num_samples - 1) || Count as i64 > (num_samples - 1)
+        {
             panic!("Requesting samples beyond the stream end");
         }
+
+        let num_channels = audio_prop.Channels();
+        let num_elements = Count * num_channels as usize;
+
+        let Buf: Vec<T> = Vec::with_capacity(num_elements);
+        let mut Buf = mem::ManuallyDrop::new(Buf);
+        let buf_ptr = Buf.as_mut_ptr();
 
         let err = unsafe {
             FFMS_GetAudio(
                 self.audio_source,
-                Buf.as_mut_ptr() as *mut c_void,
+                buf_ptr as *mut c_void,
                 Start as i64,
                 Count as i64,
                 error.as_mut_ptr(),
@@ -194,7 +202,11 @@ impl AudioSource {
         if err != 0 {
             Err(error)
         } else {
-            Ok(Buf)
+            let audio_vec = unsafe {
+                Vec::from_raw_parts(buf_ptr, num_elements, num_elements)
+            };
+
+            Ok(audio_vec)
         }
     }
 
