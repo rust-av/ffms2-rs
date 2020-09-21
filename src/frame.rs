@@ -57,6 +57,7 @@ impl FrameInfo {
     pub fn KeyFrame(&self) -> usize {
         self.frame_info.KeyFrame as usize
     }
+
     pub(crate) fn create_struct(frame_info: &FFMS_FrameInfo) -> Self {
         FrameInfo {
             frame_info: *frame_info,
@@ -250,6 +251,11 @@ impl Frame {
             data[2].as_ptr(),
             data[3].as_ptr(),
         ];
+    }
+
+    pub fn Data(&self) -> Vec<&u8> {
+        let data = self.frame.Data;
+        unsafe { vec![&*data[0], &*data[1], &*data[2], &*data[3]] }
     }
 
     pub fn set_LineSize(&mut self, linesize: &[usize; 4]) {
