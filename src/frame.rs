@@ -5,6 +5,7 @@ use ffms2_sys::*;
 
 use std::ffi::CString;
 use std::ptr;
+use std::slice;
 
 create_enum!(
     Resizers,
@@ -203,6 +204,11 @@ set_params!(
     )
 );
 
+pub struct FrameResolution {
+    pub width: i32,
+    pub height: i32,
+}
+
 impl Frame {
     pub fn GetFrame(V: &mut VideoSource, n: usize) -> Result<Self, Error> {
         let mut error: Error = Default::default();
@@ -253,9 +259,42 @@ impl Frame {
         ];
     }
 
-    pub fn Data(&self) -> Vec<&u8> {
+    pub fn get_frame_resolution(&self) -> FrameResolution {
+        let width = if self.frame.ScaledWidth == -1 {
+            self.frame.EncodedWidth
+        } else {
+            self.frame.ScaledWidth
+        };
+        let height = if self.frame.ScaledHeight == -1 {
+            self.frame.EncodedHeight
+        } else {
+            self.frame.ScaledHeight
+        };
+
+        FrameResolution { width, height }
+    }
+
+    pub fn get_pixel_data(&self) -> Vec<Option<&[u8]>> {
         let data = self.frame.Data;
-        unsafe { vec![&*data[0], &*data[1], &*data[2], &*data[3]] }
+        let frame_resolution = self.get_frame_resolution();
+        let num_planes = 4;
+        let mut data_vec = Vec::with_capacity(num_planes);
+        let linesize = self.frame.Linesize;
+
+        for i in 0..num_planes {
+            if linesize[i] == 0 {
+                data_vec.push(None);
+            } else {
+                let plane_slice_length = linesize[i] * frame_resolution.height;
+                let plane_slice = unsafe {
+                    slice::from_raw_parts(data[i], plane_slice_length as usize)
+                };
+
+                data_vec.push(Some(plane_slice));
+            }
+        }
+
+        data_vec
     }
 
     pub fn set_LineSize(&mut self, linesize: &[usize; 4]) {
