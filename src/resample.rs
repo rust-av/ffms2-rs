@@ -132,8 +132,9 @@ impl ResampleOptions {
 
 impl Drop for ResampleOptions {
     fn drop(&mut self) {
+        let raw_resample = Box::into_raw(Box::new(self.resample));
         unsafe {
-            FFMS_DestroyResampleOptions(&mut self.resample);
+            FFMS_DestroyResampleOptions(raw_resample);
         }
     }
 }
