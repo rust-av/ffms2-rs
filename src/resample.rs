@@ -128,6 +128,19 @@ impl ResampleOptions {
     pub(crate) fn as_ptr(&self) -> *const FFMS_ResampleOptions {
         &self.resample
     }
+
+    pub fn set_channel_layout(&mut self, channel_layout: i64) {
+        self.resample.ChannelLayout = channel_layout;
+    }
+
+    pub fn set_sample_format(&mut self, sample_format: &SampleFormat) {
+        self.resample.SampleFormat =
+            SampleFormat::to_sample_format(sample_format);
+    }
+
+    pub fn normalize(&mut self, normalize: bool) {
+        self.resample.Normalize = normalize as i32;
+    }
 }
 
 impl Drop for ResampleOptions {
