@@ -42,8 +42,10 @@ jobs:
         components: ${{ matrix.clippy-rustfmt }}
 
     - name: Set pkg-config variable
+      env:
+        FFMS2_PKG_CONFIG: ffms2-dir/lib/pkgconfig
       run: |
-        echo "::set-env name=PKG_CONFIG_PATH::$HOME/ffms2-dir/lib/pkgconfig"
+        echo "PKG_CONFIG_PATH=$HOME/$FFMS2_PKG_CONFIG" >> $GITHUB_ENV
 
     - name: Run rustfmt
       if: matrix.conf == 'clippy-rustfmt'
