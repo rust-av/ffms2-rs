@@ -8,7 +8,7 @@ use std::ffi::CString;
 use std::mem;
 use std::os::raw::c_void;
 use std::panic;
-use std::path::PathBuf;
+use std::path::Path;
 use std::process;
 
 pub struct Index {
@@ -17,7 +17,7 @@ pub struct Index {
 }
 
 impl Index {
-    pub fn new(IndexFile: &PathBuf) -> Result<Self, Error> {
+    pub fn new(IndexFile: &Path) -> Result<Self, Error> {
         let source = CString::new(IndexFile.to_str().unwrap()).unwrap();
         let mut error: Error = Default::default();
         let index =
@@ -73,10 +73,7 @@ impl Index {
         }
     }
 
-    pub fn IndexBelongsToFile(
-        &self,
-        SourceFile: &PathBuf,
-    ) -> Result<(), Error> {
+    pub fn IndexBelongsToFile(&self, SourceFile: &Path) -> Result<(), Error> {
         let source = CString::new(SourceFile.to_str().unwrap()).unwrap();
         let mut error: Error = Default::default();
         let err = unsafe {
@@ -94,7 +91,7 @@ impl Index {
         }
     }
 
-    pub fn WriteIndex(&self, SourceFile: &PathBuf) -> Result<(), Error> {
+    pub fn WriteIndex(&self, SourceFile: &Path) -> Result<(), Error> {
         let source = CString::new(SourceFile.to_str().unwrap()).unwrap();
         let mut error: Error = Default::default();
         let err = unsafe {
@@ -190,7 +187,7 @@ pub struct Indexer {
 }
 
 impl Indexer {
-    pub fn new(SourceFile: &PathBuf) -> Result<Self, Error> {
+    pub fn new(SourceFile: &Path) -> Result<Self, Error> {
         let source = CString::new(SourceFile.to_str().unwrap()).unwrap();
         let mut error: Error = Default::default();
         let indexer =
@@ -274,7 +271,7 @@ impl Indexer {
         }
     }
 
-    pub fn ProgressCallback<'a, F>(&self, callback: F, value: &'a mut usize)
+    pub fn ProgressCallback<F>(&self, callback: F, value: &mut usize)
     where
         F: FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,
     {

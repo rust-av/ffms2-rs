@@ -5,7 +5,7 @@ use crate::*;
 use ffms2_sys::*;
 
 use std::ffi::CString;
-use std::path::PathBuf;
+use std::path::Path;
 
 create_enum!(
     SeekMode,
@@ -174,7 +174,7 @@ pub struct VideoSource {
 
 impl VideoSource {
     pub fn new(
-        SourceFile: &PathBuf,
+        SourceFile: &Path,
         Track: usize,
         Index: &Index,
         Threads: usize,

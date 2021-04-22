@@ -5,7 +5,7 @@ use crate::video::*;
 use crate::*;
 
 use std::ffi::CString;
-use std::path::PathBuf;
+use std::path::Path;
 
 create_enum!(
     TrackType,
@@ -78,7 +78,7 @@ impl Track {
         Track { track }
     }
 
-    pub fn WriteTimecodes(&self, TimecodeFile: &PathBuf) -> Result<(), Error> {
+    pub fn WriteTimecodes(&self, TimecodeFile: &Path) -> Result<(), Error> {
         let source = CString::new(TimecodeFile.to_str().unwrap()).unwrap();
         let mut error: Error = Default::default();
         let err = unsafe {
