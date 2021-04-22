@@ -73,7 +73,7 @@ fn update_progress(
 fn dump_filename(
     track: &Track,
     track_num: usize,
-    cache_file: &PathBuf,
+    cache_file: &Path,
     suffix: &str,
 ) -> PathBuf {
     if track.NumFrames() == 0 {
@@ -91,12 +91,12 @@ fn dump_filename(
 
 fn do_indexing(
     args: &CliArgs,
-    cache_file: &PathBuf,
+    cache_file: &Path,
     ignore_errors: IndexErrorHandling,
 ) -> std::io::Result<()> {
     let mut progress = 0;
 
-    if cache_file.as_path().exists() && !args.force {
+    if cache_file.exists() && !args.force {
         panic!(
             "Error: index file already exists, \
              use -f if you are sure you want to overwrite it."

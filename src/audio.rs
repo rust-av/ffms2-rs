@@ -7,7 +7,7 @@ use ffms2_sys::*;
 use std::ffi::c_void;
 use std::ffi::CString;
 use std::mem;
-use std::path::PathBuf;
+use std::path::Path;
 
 simple_enum!(
     AudioChannel,
@@ -135,7 +135,7 @@ pub struct AudioSource {
 
 impl AudioSource {
     pub fn new(
-        SourceFile: &PathBuf,
+        SourceFile: &Path,
         Track: usize,
         Index: &Index,
         DelayMode: isize,
