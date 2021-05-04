@@ -43,9 +43,7 @@ create_enum!(
     (CR_UNSPECIFIED, CR_MPEG, CR_JPEG)
 );
 
-set_struct!(VideoProperties, video_properties, FFMS_VideoProperties);
-
-default_struct!(
+create_struct!(
     VideoProperties,
     video_properties,
     FFMS_VideoProperties,
@@ -86,85 +84,6 @@ default_struct!(
     (
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0, 0, 0.0, 0,
         [0.0; 3], [0.0; 3], 0.0, 0.0, 0, 0.0, 0.0, 0, 0, 0, 0
-    )
-);
-
-set_params!(
-    VideoProperties,
-    video_properties,
-    (
-        FPSDenominator,
-        FPSNumerator,
-        RFFDenominator,
-        RFFNumerator,
-        NumFrames,
-        SARNum,
-        SARDen,
-        CropTop,
-        CropBottom,
-        CropLeft,
-        CropRight,
-        TopFieldFirst,
-        ColorSpace,
-        ColorRange,
-        FirstTime,
-        LastTime,
-        Rotation,
-        Stereo3DType,
-        Stereo3DFlags,
-        LastEndTime,
-        HasMasteringDisplayPrimaries,
-        MasteringDisplayPrimariesX,
-        MasteringDisplayPrimariesY,
-        MasteringDisplayWhitePointX,
-        MasteringDisplayWhitePointY,
-        HasMasteringDisplayLuminance,
-        MasteringDisplayMinLuminance,
-        MasteringDisplayMaxLuminance,
-        HasContentLightLevel,
-        ContentLightLevelMax,
-        ContentLightLevelAverage,
-        Flip
-    ),
-    (
-        usize, usize, usize, usize, usize, usize, usize, usize, usize, usize,
-        usize, usize, usize, usize, f64, f64, usize, usize, usize, f64, usize,
-        &[f64; 3], &[f64; 3], f64, f64, usize, f64, f64, usize, usize, usize,
-        usize
-    ),
-    (
-        FPSDenominator as i32,
-        FPSNumerator as i32,
-        RFFDenominator as i32,
-        RFFNumerator as i32,
-        NumFrames as i32,
-        SARNum as i32,
-        SARDen as i32,
-        CropTop as i32,
-        CropBottom as i32,
-        CropLeft as i32,
-        CropRight as i32,
-        TopFieldFirst as i32,
-        ColorSpace as i32,
-        ColorRange as i32,
-        FirstTime as f64,
-        LastTime as f64,
-        Rotation as i32,
-        Stereo3DType as i32,
-        Stereo3DFlags as i32,
-        LastEndTime as f64,
-        HasMasteringDisplayPrimaries as i32,
-        *MasteringDisplayPrimariesX as [f64; 3],
-        *MasteringDisplayPrimariesY as [f64; 3],
-        MasteringDisplayWhitePointX as f64,
-        MasteringDisplayWhitePointY as f64,
-        HasMasteringDisplayLuminance as i32,
-        MasteringDisplayMinLuminance as f64,
-        MasteringDisplayMaxLuminance as f64,
-        HasContentLightLevel as i32,
-        ContentLightLevelMax as u32,
-        ContentLightLevelAverage as u32,
-        Flip as i32
     )
 );
 

@@ -44,14 +44,7 @@ create_struct!(
     frame_info,
     FFMS_FrameInfo,
     (PTS, RepeatPict, KeyFrame, OriginalPTS),
-    (usize, usize, usize, usize),
-    (0, 0, 0, 0),
-    (
-        PTS as i64,
-        RepeatPict as i32,
-        KeyFrame as i32,
-        OriginalPTS as i64
-    )
+    (0, 0, 0, 0)
 );
 
 impl FrameInfo {
@@ -66,9 +59,7 @@ impl FrameInfo {
     }
 }
 
-set_struct!(Frame, frame, FFMS_Frame);
-
-default_struct!(
+create_struct!(
     Frame,
     frame,
     FFMS_Frame,
@@ -133,74 +124,6 @@ default_struct!(
         0,
         0,
         0
-    )
-);
-
-set_params!(
-    Frame,
-    frame,
-    (
-        EncodedWidth,
-        EncodedHeight,
-        EncodedPixelFormat,
-        ScaledWidth,
-        ScaledHeight,
-        ConvertedPixelFormat,
-        KeyFrame,
-        RepeatPict,
-        InterlacedFrame,
-        TopFieldFirst,
-        PictType,
-        ColorSpace,
-        ColorRange,
-        ColorPrimaries,
-        TransferCharateristics,
-        ChromaLocation,
-        HasMasteringDisplayPrimaries,
-        MasteringDisplayPrimariesX,
-        MasteringDisplayPrimariesY,
-        MasteringDisplayWhitePointX,
-        MasteringDisplayWhitePointY,
-        HasMasteringDisplayLuminance,
-        MasteringDisplayMinLuminance,
-        MasteringDisplayMaxLuminance,
-        HasContentLightLevel,
-        ContentLightLevelMax,
-        ContentLightLevelAverage
-    ),
-    (
-        usize, usize, usize, usize, usize, usize, usize, usize, usize, usize,
-        i8, usize, usize, usize, usize, usize, usize, &[f64; 3], &[f64; 3],
-        f64, f64, usize, f64, f64, usize, usize, usize
-    ),
-    (
-        EncodedWidth as i32,
-        EncodedHeight as i32,
-        EncodedPixelFormat as i32,
-        ScaledWidth as i32,
-        ScaledHeight as i32,
-        ConvertedPixelFormat as i32,
-        KeyFrame as i32,
-        RepeatPict as i32,
-        InterlacedFrame as i32,
-        TopFieldFirst as i32,
-        PictType as i8,
-        ColorSpace as i32,
-        ColorRange as i32,
-        ColorPrimaries as i32,
-        TransferCharateristics as i32,
-        ChromaLocation as i32,
-        HasMasteringDisplayPrimaries as i32,
-        *MasteringDisplayPrimariesX as [f64; 3],
-        *MasteringDisplayPrimariesY as [f64; 3],
-        MasteringDisplayWhitePointX as f64,
-        MasteringDisplayWhitePointY as f64,
-        HasMasteringDisplayLuminance as i32,
-        MasteringDisplayMinLuminance as f64,
-        MasteringDisplayMaxLuminance as f64,
-        HasContentLightLevel as i32,
-        ContentLightLevelMax as u32,
-        ContentLightLevelAverage as u32
     )
 );
 
