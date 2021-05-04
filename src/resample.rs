@@ -1,4 +1,3 @@
-use crate::audio::MatrixEncoding;
 use crate::*;
 
 create_enum!(
