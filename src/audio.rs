@@ -55,9 +55,7 @@ create_enum!(
     )
 );
 
-set_struct!(AudioProperties, audio_properties, FFMS_AudioProperties);
-
-default_struct!(
+create_struct!(
     AudioProperties,
     audio_properties,
     FFMS_AudioProperties,
@@ -74,60 +72,6 @@ default_struct!(
     ),
     (0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0)
 );
-
-set_params!(
-    AudioProperties,
-    audio_properties,
-    (
-        SampleFormat,
-        SampleRate,
-        BitsPerSample,
-        Channels,
-        ChannelLayout,
-        NumSamples,
-        FirstTime,
-        LastTime,
-        LastEndTime,
-    ),
-    (usize, usize, usize, usize, usize, usize, f64, f64, f64),
-    (
-        SampleFormat as i32,
-        SampleRate as i32,
-        BitsPerSample as i32,
-        Channels as i32,
-        ChannelLayout as i64,
-        NumSamples as i64,
-        FirstTime as f64,
-        LastTime as f64,
-        LastEndTime as f64,
-    )
-);
-
-impl AudioProperties {
-    pub fn NumSamples(&self) -> i64 {
-        self.audio_properties.NumSamples
-    }
-
-    pub fn SampleRate(&self) -> i32 {
-        self.audio_properties.SampleRate
-    }
-
-    pub fn Channels(&self) -> i32 {
-        self.audio_properties.Channels
-    }
-
-    pub fn SampleFormat(&self) -> i32 {
-        self.audio_properties.SampleFormat
-    }
-
-    pub fn ChannelLayout(&self) -> i64 {
-        self.audio_properties.ChannelLayout
-    }
-
-    pub fn BitsPerSample(&self) -> i32 {
-        self.audio_properties.BitsPerSample
-    }
-}
 
 pub struct AudioSource {
     audio_source: *mut FFMS_AudioSource,
@@ -175,14 +119,14 @@ impl AudioSource {
     ) -> Result<Vec<T>, Error> {
         let mut error: Error = Default::default();
         let audio_prop = self.GetAudioProperties();
-        let num_samples = audio_prop.NumSamples();
+        let num_samples = audio_prop.NumSamples;
 
         if Start as i64 > (num_samples - 1) || Count as i64 > (num_samples - 1)
         {
             panic!("Requesting samples beyond the stream end");
         }
 
-        let num_channels = audio_prop.Channels();
+        let num_channels = audio_prop.Channels;
         let num_elements = Count * num_channels as usize;
 
         let Buf: Vec<T> = Vec::with_capacity(num_elements);

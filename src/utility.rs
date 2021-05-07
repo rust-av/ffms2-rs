@@ -19,6 +19,7 @@ macro_rules! create_enum {
 
         impl $enum {
             paste::item! {
+                #[allow(dead_code)]
                 pub(crate) fn [<to_ $func_name>](&self) -> $type {
                     match self {
                         $(
@@ -108,12 +109,29 @@ macro_rules! default_struct {
 }
 
 #[macro_export]
+macro_rules! implement_deref {
+    ($struct:ident, $param:ident, $type:tt) => {
+        impl std::ops::Deref for $struct {
+            type Target = $type;
+
+            fn deref(&self) -> &Self::Target {
+                &self.$param
+            }
+        }
+
+        impl std::ops::DerefMut for $struct {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.$param
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! create_struct {
     ($struct:ident, $param:ident, $type:tt,
      ($($field_name:ident),*$(,)*),
-     ($($field_type:ty),*$(,)*),
-     ($($field_default_expr:expr),*$(,)*),
-     ($($field_expr:expr),*$(,)*)
+     ($($field_default_expr:expr),*$(,)*)
      ) => {
 
         set_struct!($struct, $param, $type);
@@ -122,28 +140,6 @@ macro_rules! create_struct {
                        ($($field_name,)*),
                        ($($field_default_expr,)*));
 
-        set_params!($struct, $param,
-                   ($($field_name,)*),
-                   ($($field_type,)*),
-                   ($($field_expr,)*));
+        implement_deref!($struct, $param, $type);
     }
-}
-
-#[macro_export]
-macro_rules! set_params {
-    ($struct:ident, $param:ident,
-    ($($field_name:ident),*$(,)*),
-    ($($field_type:ty),*$(,)*),
-    ($($field_expr:expr),*$(,)*))
-    => {
-            impl $struct {
-                paste::item! {
-                    $(
-                        pub fn [<set_ $field_name>](&mut self, $field_name: $field_type) {
-                            self.$param.$field_name = paste::expr! { ($field_expr) }
-                        }
-                    )*
-                }
-            }
-       }
 }

@@ -39,9 +39,7 @@ create_struct!(
     track_time_base,
     FFMS_TrackTimeBase,
     (Num, Den),
-    (usize, usize),
-    (0, 0),
-    (Num as i64, Den as i64)
+    (0, 0)
 );
 
 macro_rules! track_error {

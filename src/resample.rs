@@ -1,4 +1,3 @@
-use crate::audio::MatrixEncoding;
 use crate::*;
 
 create_enum!(
@@ -60,25 +59,6 @@ create_struct!(
         DitherMethod
     ),
     (
-        usize,
-        &SampleFormat,
-        usize,
-        &MixingCoefficientType,
-        f64,
-        f64,
-        f64,
-        usize,
-        usize,
-        usize,
-        usize,
-        usize,
-        f32,
-        &MatrixEncoding,
-        &ResampleFilterType,
-        usize,
-        &AudioDitherMethod
-    ),
-    (
         0,
         FFMS_SampleFormat::FFMS_FMT_U8,
         0,
@@ -96,25 +76,6 @@ create_struct!(
         FFMS_ResampleFilterType::FFMS_RESAMPLE_FILTER_CUBIC,
         0,
         FFMS_AudioDitherMethod::FFMS_RESAMPLE_DITHER_NONE
-    ),
-    (
-        ChannelLayout as i64,
-        SampleFormat::to_sample_format(SampleFormat),
-        SampleRate as i32,
-        MixingCoefficientType::to_mix_coefficient_type(MixingCoefficientType),
-        CenterMixLevel as f64,
-        SurroundMixLevel as f64,
-        LFEMixLevel as f64,
-        Normalize as i32,
-        ForceResample as i32,
-        ResampleFilterSize as i32,
-        ResamplePhaseShift as i32,
-        LinearInterpolation as i32,
-        CutoffFrequencyRatio as f64,
-        MatrixEncoding::to_matrix_encoding(MatrixedStereoEncoding),
-        ResampleFilterType::to_resample_filter_type(FilterType),
-        KaiserBeta as i32,
-        AudioDitherMethod::to_audio_dither_method(DitherMethod)
     )
 );
 
