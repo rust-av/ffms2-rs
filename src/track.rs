@@ -118,3 +118,5 @@ impl Track {
         num_frames as usize
     }
 }
+
+unsafe impl Send for Track {}

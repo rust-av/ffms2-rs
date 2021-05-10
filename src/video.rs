@@ -207,3 +207,5 @@ impl Drop for VideoSource {
         }
     }
 }
+
+unsafe impl Send for VideoSource {}

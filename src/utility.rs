@@ -141,5 +141,9 @@ macro_rules! create_struct {
                        ($($field_default_expr,)*));
 
         implement_deref!($struct, $param, $type);
+
+        /// While the underlying pointer might not allow concurrent access from different threads (and is consequently not "Sync"),
+        /// it relies neither on thread-local storage nor thread-specific locks and is therefore safe to send.
+        unsafe impl Send for $struct {}
     }
 }
