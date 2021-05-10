@@ -193,3 +193,5 @@ impl Drop for AudioSource {
         }
     }
 }
+
+unsafe impl Send for AudioSource {}

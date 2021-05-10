@@ -182,6 +182,8 @@ impl Drop for Index {
     }
 }
 
+unsafe impl Send for Index {}
+
 pub struct Indexer {
     indexer: *mut FFMS_Indexer,
 }
@@ -322,3 +324,5 @@ impl Indexer {
         }
     }
 }
+
+unsafe impl Send for Indexer {}
