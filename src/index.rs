@@ -16,6 +16,8 @@ pub struct Index {
     buffer: Vec<u8>,
 }
 
+unsafe impl Send for Index {}
+
 impl Index {
     pub fn new(IndexFile: &Path) -> Result<Self, Error> {
         let source = CString::new(IndexFile.to_str().unwrap()).unwrap();
@@ -182,11 +184,11 @@ impl Drop for Index {
     }
 }
 
-unsafe impl Send for Index {}
-
 pub struct Indexer {
     indexer: *mut FFMS_Indexer,
 }
+
+unsafe impl Send for Indexer {}
 
 impl Indexer {
     pub fn new(SourceFile: &Path) -> Result<Self, Error> {
@@ -324,5 +326,3 @@ impl Indexer {
         }
     }
 }
-
-unsafe impl Send for Indexer {}

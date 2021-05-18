@@ -55,6 +55,8 @@ pub struct Track {
     track: *mut FFMS_Track,
 }
 
+unsafe impl Send for Track {}
+
 impl Track {
     pub fn TrackFromIndex(index: &Index, Track: usize) -> Self {
         let track = unsafe {
@@ -118,5 +120,3 @@ impl Track {
         num_frames as usize
     }
 }
-
-unsafe impl Send for Track {}

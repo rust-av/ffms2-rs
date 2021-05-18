@@ -91,6 +91,8 @@ pub struct VideoSource {
     video_source: *mut FFMS_VideoSource,
 }
 
+unsafe impl Send for VideoSource {}
+
 impl VideoSource {
     pub fn new(
         SourceFile: &Path,
@@ -207,5 +209,3 @@ impl Drop for VideoSource {
         }
     }
 }
-
-unsafe impl Send for VideoSource {}

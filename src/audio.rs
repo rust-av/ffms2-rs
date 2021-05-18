@@ -77,6 +77,8 @@ pub struct AudioSource {
     audio_source: *mut FFMS_AudioSource,
 }
 
+unsafe impl Send for AudioSource {}
+
 impl AudioSource {
     pub fn new(
         SourceFile: &Path,
@@ -193,5 +195,3 @@ impl Drop for AudioSource {
         }
     }
 }
-
-unsafe impl Send for AudioSource {}
