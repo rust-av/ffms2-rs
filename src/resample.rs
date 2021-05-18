@@ -1,9 +1,7 @@
 use crate::*;
 
-create_enum!(
+simple_enum!(
     ResampleFilterType,
-    FFMS_ResampleFilterType,
-    resample_filter_type,
     (
         RESAMPLE_FILTER_CUBIC,
         RESAMPLE_FILTER_SINC,
@@ -11,10 +9,8 @@ create_enum!(
     )
 );
 
-create_enum!(
+simple_enum!(
     AudioDitherMethod,
-    FFMS_AudioDitherMethod,
-    audio_dither_method,
     (
         RESAMPLE_DITHER_NONE,
         RESAMPLE_DITHER_RECTANGULAR,
@@ -24,10 +20,8 @@ create_enum!(
     )
 );
 
-create_enum!(
+simple_enum!(
     MixingCoefficientType,
-    FFMS_MixingCoefficientType,
-    mix_coefficient_type,
     (
         MIXING_COEFFICIENT_Q8,
         MIXING_COEFFICIENT_Q15,

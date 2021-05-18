@@ -40,10 +40,8 @@ simple_enum!(
     (DELAY_NO_SHIFT, DELAY_TIME_ZERO, DELAY_FIRST_VIDEO_TRACK)
 );
 
-create_enum!(
+simple_enum!(
     MatrixEncoding,
-    FFMS_MatrixEncoding,
-    matrix_encoding,
     (
         MATRIX_ENCODING_NONE,
         MATRIX_ENCODING_DOBLY,

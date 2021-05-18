@@ -19,7 +19,6 @@ macro_rules! create_enum {
 
         impl $enum {
             paste::item! {
-                #[allow(dead_code)]
                 pub(crate) fn [<to_ $func_name>](&self) -> $type {
                     match self {
                         $(
