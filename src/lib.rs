@@ -2,14 +2,15 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::upper_case_acronyms)]
 
+#[macro_use]
+mod utility;
+
 pub mod audio;
 pub mod frame;
 pub mod index;
 pub mod resample;
 pub mod track;
 pub mod video;
-
-mod utility;
 
 use ffms2_sys::*;
 

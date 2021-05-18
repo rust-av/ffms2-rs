@@ -1,6 +1,6 @@
 extern crate paste;
 
-#[macro_export]
+#[macro_use]
 macro_rules! simple_enum {
     ($enum:ident, ($($field_name:ident),*$(,)*)) => {
         #[derive(Clone, Copy, Debug)]
@@ -10,7 +10,7 @@ macro_rules! simple_enum {
     }
 }
 
-#[macro_export]
+#[macro_use]
 macro_rules! create_enum {
     ($enum:ident, $type:ident, $func_name:ident,
     ($($field_name:ident),*$(,)*)) => {
@@ -31,7 +31,7 @@ macro_rules! create_enum {
     }
 }
 
-#[macro_export]
+#[macro_use]
 macro_rules! from_i32 {
     ($enum:ident, $type:ident,
     ($($field_name:ident),*$(,)*)) => {
@@ -50,7 +50,7 @@ macro_rules! from_i32 {
     }
 }
 
-#[macro_export]
+#[macro_use]
 macro_rules! display {
     ($enum:ident, ($($field_name:ident: $field_err:expr),*$(,)*)) => {
         impl fmt::Display for $enum {
@@ -67,7 +67,7 @@ macro_rules! display {
     }
 }
 
-#[macro_export]
+#[macro_use]
 macro_rules! errors {
     ($enum:ident, $type:ident,
     ($($field_name:ident: $field_err:expr),*$(,)*)) => {
@@ -81,7 +81,7 @@ macro_rules! errors {
     }
 }
 
-#[macro_export]
+#[macro_use]
 macro_rules! set_struct {
     ($struct:ident, $param:ident, $type:tt) => {
         pub struct $struct {
@@ -90,7 +90,7 @@ macro_rules! set_struct {
     };
 }
 
-#[macro_export]
+#[macro_use]
 macro_rules! default_struct {
     ($struct:ident, $param:ident, $type:tt,
      ($($field_name:ident),*$(,)*),
@@ -107,7 +107,7 @@ macro_rules! default_struct {
     }
 }
 
-#[macro_export]
+#[macro_use]
 macro_rules! implement_deref {
     ($struct:ident, $param:ident, $type:tt) => {
         impl std::ops::Deref for $struct {
@@ -126,7 +126,7 @@ macro_rules! implement_deref {
     };
 }
 
-#[macro_export]
+#[macro_use]
 macro_rules! create_struct {
     ($struct:ident, $param:ident, $type:tt,
      ($($field_name:ident),*$(,)*),
