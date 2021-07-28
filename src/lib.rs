@@ -155,7 +155,7 @@ impl Log {
 
     pub fn SetLogLevel(Level: LogLevels) {
         unsafe {
-            FFMS_SetLogLevel(LogLevels::to_log_levels(&Level) as i32);
+            FFMS_SetLogLevel(LogLevels::to_log_levels(Level) as i32);
         }
     }
 }

@@ -134,7 +134,7 @@ impl Index {
         let num_tracks = unsafe {
             FFMS_GetFirstTrackOfType(
                 self.index,
-                TrackType::to_track_type(&TrackType) as i32,
+                TrackType::to_track_type(TrackType) as i32,
                 error.as_mut_ptr(),
             )
         };
@@ -153,7 +153,7 @@ impl Index {
         let num_tracks = unsafe {
             FFMS_GetFirstIndexedTrackOfType(
                 self.index,
-                TrackType::to_track_type(&TrackType) as i32,
+                TrackType::to_track_type(TrackType) as i32,
                 error.as_mut_ptr(),
             )
         };
@@ -237,8 +237,7 @@ impl Indexer {
         ErrorHandling: IndexErrorHandling,
     ) -> Result<Index, Error> {
         let mut error: Error = Default::default();
-        let handling =
-            IndexErrorHandling::to_idx_errors(&ErrorHandling) as i32;
+        let handling = IndexErrorHandling::to_idx_errors(ErrorHandling) as i32;
         let index = unsafe {
             FFMS_DoIndexing2(self.indexer, handling, error.as_mut_ptr())
         };
@@ -268,7 +267,7 @@ impl Indexer {
         unsafe {
             FFMS_TrackTypeIndexSettings(
                 self.indexer,
-                TrackType::to_track_type(&TrackType) as i32,
+                TrackType::to_track_type(TrackType) as i32,
                 Index as i32,
                 0,
             );

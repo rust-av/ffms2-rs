@@ -90,7 +90,7 @@ impl ResampleOptions {
 
     pub fn set_sample_format(&mut self, sample_format: &SampleFormat) {
         self.resample.SampleFormat =
-            SampleFormat::to_sample_format(sample_format);
+            SampleFormat::to_sample_format(*sample_format);
     }
 
     pub fn normalize(&mut self, normalize: bool) {

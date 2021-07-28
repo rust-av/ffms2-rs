@@ -103,7 +103,7 @@ impl VideoSource {
     ) -> Result<Self, Error> {
         let source = CString::new(SourceFile.to_str().unwrap()).unwrap();
         let mut error: Error = Default::default();
-        let seek = SeekMode::to_seek_mode(&SeekMode) as i32;
+        let seek = SeekMode::to_seek_mode(SeekMode) as i32;
         let video_source = unsafe {
             FFMS_CreateVideoSource(
                 source.as_ptr(),
@@ -138,7 +138,7 @@ impl VideoSource {
         PixelFormat: usize,
     ) -> Result<(), Error> {
         let mut error: Error = Default::default();
-        let colorange = ColorRanges::to_color_ranges(&ColorRange) as i32;
+        let colorange = ColorRanges::to_color_ranges(ColorRange) as i32;
         let err = unsafe {
             FFMS_SetInputFormatV(
                 self.video_source,
@@ -170,7 +170,7 @@ impl VideoSource {
         Resizer: Resizers,
     ) -> Result<(), Error> {
         let mut error: Error = Default::default();
-        let resize = Resizers::to_resizers(&Resizer) as i32;
+        let resize = Resizers::to_resizers(Resizer) as i32;
         TargetFormats.push(-1);
         let err = unsafe {
             FFMS_SetOutputFormatV2(
