@@ -1,6 +1,8 @@
 use crate::video::*;
 use crate::*;
 
+use ffmpeg_the_third::ffi::AVPixelFormat;
+use ffmpeg_the_third::format::Pixel;
 use ffms2_sys::*;
 
 use std::ffi::CString;
@@ -204,11 +206,18 @@ impl Frame {
         let mut data_vec = Vec::with_capacity(num_planes);
         let linesize = self.frame.Linesize;
 
+        // very sketchy, try to find a better way
+        let pix_fmt: AVPixelFormat =
+            unsafe { mem::transmute(self.frame.EncodedPixelFormat) };
+        let pix_fmt = Pixel::from(pix_fmt);
+        let log2_chroma_h = pix_fmt.descriptor().unwrap().log2_chroma_h();
+
         for i in 0..num_planes {
             if linesize[i] == 0 {
                 data_vec.push(None);
             } else {
-                let plane_slice_length = linesize[i] * frame_resolution.height;
+                let plane_slice_length = linesize[i] * frame_resolution.height
+                    / if i == 0 { 1 } else { 1 << log2_chroma_h };
                 let plane_slice = unsafe {
                     slice::from_raw_parts(data[i], plane_slice_length as usize)
                 };
