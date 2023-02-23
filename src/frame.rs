@@ -6,7 +6,6 @@ use ffmpeg_the_third::format::Pixel;
 use ffms2_sys::*;
 
 use std::ffi::CString;
-use std::panic;
 use std::ptr;
 use std::slice;
 
@@ -200,7 +199,7 @@ impl Frame {
         FrameResolution { width, height }
     }
 
-    pub fn get_pixel_data(&self) -> Result<Vec<Option<&[u8]>>, String> {
+    pub fn get_pixel_data(&self) -> Option<Vec<Option<&[u8]>>> {
         let data = self.frame.Data;
         let num_planes = 4;
         let mut data_vec = Vec::with_capacity(num_planes);
@@ -211,11 +210,7 @@ impl Frame {
             unsafe { mem::transmute(self.frame.EncodedPixelFormat) };
         let log2_chroma_h = match Pixel::from(pix_fmt).descriptor() {
             Some(pix_fmt_descriptor) => pix_fmt_descriptor.log2_chroma_h(),
-            None => {
-                return Err(
-                    "Couldn't find pixel format descriptor".to_string()
-                );
-            }
+            None => return None,
         };
 
         for i in 0..num_planes {
@@ -233,7 +228,7 @@ impl Frame {
             }
         }
 
-        Ok(data_vec)
+        Some(data_vec)
     }
 
     pub fn set_LineSize(&mut self, linesize: &[usize; 4]) {
