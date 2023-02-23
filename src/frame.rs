@@ -6,6 +6,7 @@ use ffmpeg_the_third::format::Pixel;
 use ffms2_sys::*;
 
 use std::ffi::CString;
+use std::panic;
 use std::ptr;
 use std::slice;
 
@@ -199,9 +200,8 @@ impl Frame {
         FrameResolution { width, height }
     }
 
-    pub fn get_pixel_data(&self) -> Vec<Option<&[u8]>> {
+    pub fn get_pixel_data(&self) -> Result<Vec<Option<&[u8]>>, String> {
         let data = self.frame.Data;
-        let frame_resolution = self.get_frame_resolution();
         let num_planes = 4;
         let mut data_vec = Vec::with_capacity(num_planes);
         let linesize = self.frame.Linesize;
@@ -209,15 +209,29 @@ impl Frame {
         // very sketchy, try to find a better way
         let pix_fmt: AVPixelFormat =
             unsafe { mem::transmute(self.frame.EncodedPixelFormat) };
-        let pix_fmt = Pixel::from(pix_fmt);
-        let log2_chroma_h = pix_fmt.descriptor().unwrap().log2_chroma_h();
+        let pix_fmt = match panic::catch_unwind(|| Pixel::from(pix_fmt)) {
+            Ok(pix_fmt) => pix_fmt,
+            Err(_) => {
+                return Err("Couldn't find pixel format".to_string());
+            }
+        };
+
+        let log2_chroma_h = match Pixel::from(pix_fmt).descriptor() {
+            Some(pix_fmt_descriptor) => pix_fmt_descriptor.log2_chroma_h(),
+            None => {
+                return Err(
+                    "Couldn't find pixel format descriptor".to_string()
+                );
+            }
+        };
 
         for i in 0..num_planes {
             if linesize[i] == 0 {
                 data_vec.push(None);
             } else {
-                let plane_slice_length = linesize[i] * frame_resolution.height
-                    / if i == 0 { 1 } else { 1 << log2_chroma_h };
+                let sub_h = if i == 0 { 1 } else { 1 << log2_chroma_h };
+                let plane_slice_length =
+                    linesize[i] * self.EncodedHeight / sub_h;
                 let plane_slice = unsafe {
                     slice::from_raw_parts(data[i], plane_slice_length as usize)
                 };
@@ -226,7 +240,7 @@ impl Frame {
             }
         }
 
-        data_vec
+        Ok(data_vec)
     }
 
     pub fn set_LineSize(&mut self, linesize: &[usize; 4]) {
