@@ -209,13 +209,6 @@ impl Frame {
         // very sketchy, try to find a better way
         let pix_fmt: AVPixelFormat =
             unsafe { mem::transmute(self.frame.EncodedPixelFormat) };
-        let pix_fmt = match panic::catch_unwind(|| Pixel::from(pix_fmt)) {
-            Ok(pix_fmt) => pix_fmt,
-            Err(_) => {
-                return Err("Couldn't find pixel format".to_string());
-            }
-        };
-
         let log2_chroma_h = match Pixel::from(pix_fmt).descriptor() {
             Some(pix_fmt_descriptor) => pix_fmt_descriptor.log2_chroma_h(),
             None => {
@@ -229,9 +222,9 @@ impl Frame {
             if linesize[i] == 0 {
                 data_vec.push(None);
             } else {
-                let sub_h = if i == 0 { 1 } else { 1 << log2_chroma_h };
+                let sub_h = if i == 0 { 0 } else { log2_chroma_h };
                 let plane_slice_length =
-                    linesize[i] * self.EncodedHeight / sub_h;
+                    linesize[i] * self.EncodedHeight >> sub_h;
                 let plane_slice = unsafe {
                     slice::from_raw_parts(data[i], plane_slice_length as usize)
                 };
