@@ -1,6 +1,8 @@
 use crate::video::*;
 use crate::*;
 
+use ffmpeg_the_third::ffi::AVPixelFormat;
+use ffmpeg_the_third::format::Pixel;
 use ffms2_sys::*;
 
 use std::ffi::CString;
@@ -197,18 +199,38 @@ impl Frame {
         FrameResolution { width, height }
     }
 
-    pub fn get_pixel_data(&self) -> Vec<Option<&[u8]>> {
+    pub fn get_pixel_data(&self) -> Option<Vec<Option<&[u8]>>> {
         let data = self.frame.Data;
-        let frame_resolution = self.get_frame_resolution();
         let num_planes = 4;
         let mut data_vec = Vec::with_capacity(num_planes);
         let linesize = self.frame.Linesize;
+
+        // This is not good, but we can't think of any better way to do this.
+        // See https://github.com/rust-av/ffms2-rs/pull/29#discussion_r1115397695
+        // What we've considered:
+        // 1. A large match statement mapping the i32 (from FFMS2) to the AVPixelFormat enum.
+        //    This is an unreasonable amount of work since the AVPixelFormat enum is different
+        //    across versions and build configurations of FFmpeg, all of which we would need to support.
+        // 2. Parsing the pixel format string.
+        //    Although FFMS2 provides a function to get the i32 from the pixel format string,
+        //    there's no function for the other way around.
+        // 3. Making a PR in FFMS2 to expose chrome height in the frame struct.
+        //    This is the best solution; we just gotta find someone to do it.
+        let pix_fmt: AVPixelFormat =
+            unsafe { mem::transmute(self.frame.EncodedPixelFormat) };
+
+        let log2_chroma_h = match Pixel::from(pix_fmt).descriptor() {
+            Some(pix_fmt_descriptor) => pix_fmt_descriptor.log2_chroma_h(),
+            None => return None,
+        };
 
         for i in 0..num_planes {
             if linesize[i] == 0 {
                 data_vec.push(None);
             } else {
-                let plane_slice_length = linesize[i] * frame_resolution.height;
+                let sub_h = if i == 0 { 0 } else { log2_chroma_h };
+                let plane_slice_length =
+                    linesize[i] * self.EncodedHeight >> sub_h;
                 let plane_slice = unsafe {
                     slice::from_raw_parts(data[i], plane_slice_length as usize)
                 };
@@ -217,7 +239,7 @@ impl Frame {
             }
         }
 
-        data_vec
+        Some(data_vec)
     }
 
     pub fn set_LineSize(&mut self, linesize: &[usize; 4]) {
