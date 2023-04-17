@@ -8,7 +8,7 @@ edition = "2018"
 license = "MIT"
 
 [build-dependencies]
-bindgen = "0.64"
+bindgen = "0.65"
 metadeps = "1.1"
 
 [package.metadata.pkg-config]
