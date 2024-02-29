@@ -1,15 +1,15 @@
 [package]
 name = "ffms2-sys"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Luni-4 <luni-4@hotmail.it>"]
 description = "FFI bindings to ffms2"
 repository = "https://github.com/rust-av/ffms2-rs"
-edition = "2018"
+edition = "2021"
 license = "MIT"
 
 [build-dependencies]
-bindgen = "0.64"
+bindgen = "0.66"
 metadeps = "1.1"
 
 [package.metadata.pkg-config]
-ffms2 = "2.15"
+ffms2 = "2.40"
