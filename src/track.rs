@@ -4,6 +4,8 @@ use crate::index::*;
 use crate::video::*;
 use crate::*;
 
+use crate::error::{InternalError, Result};
+
 use std::ffi::CString;
 use std::path::Path;
 
@@ -78,9 +80,9 @@ impl Track {
         Track { track }
     }
 
-    pub fn WriteTimecodes(&self, TimecodeFile: &Path) -> Result<(), Error> {
+    pub fn WriteTimecodes(&self, TimecodeFile: &Path) -> Result<()> {
         let source = CString::new(TimecodeFile.to_str().unwrap()).unwrap();
-        let mut error: Error = Default::default();
+        let mut error = InternalError::new();
         let err = unsafe {
             FFMS_WriteTimecodes(
                 self.track,
@@ -90,7 +92,7 @@ impl Track {
         };
 
         if err != 0 {
-            Err(error)
+            Err(error.into())
         } else {
             Ok(())
         }

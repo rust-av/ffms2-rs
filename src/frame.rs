@@ -230,7 +230,7 @@ impl Frame {
             } else {
                 let sub_h = if i == 0 { 0 } else { log2_chroma_h };
                 let plane_slice_length =
-                    linesize[i] * self.EncodedHeight >> sub_h;
+                    (linesize[i] * self.EncodedHeight) >> sub_h;
                 let plane_slice = unsafe {
                     slice::from_raw_parts(data[i], plane_slice_length as usize)
                 };

@@ -49,8 +49,8 @@ macro_rules! from_i32 {
 
 macro_rules! display {
     ($enum:ident, ($($field_name:ident: $field_err:expr),*$(,)*)) => {
-        impl fmt::Display for $enum {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        impl std::fmt::Display for $enum {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 let v = match self {
                     $(
                         $enum::$field_name => $field_err,

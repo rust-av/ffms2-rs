@@ -127,7 +127,7 @@ fn do_indexing(
         let num_tracks = index.NumTracks();
         for t in 0..num_tracks {
             let track = Track::TrackFromIndex(&index, t);
-            let filename = dump_filename(&track, t, &cache_file, ".tc.txt");
+            let filename = dump_filename(&track, t, cache_file, ".tc.txt");
             if !filename.to_str().unwrap().is_empty()
                 && track.WriteTimecodes(&filename).is_err()
             {
@@ -145,7 +145,7 @@ fn do_indexing(
         let num_tracks = index.NumTracks();
         for t in 0..num_tracks {
             let track = Track::TrackFromIndex(&index, t);
-            let filename = dump_filename(&track, t, &cache_file, ".kf.txt");
+            let filename = dump_filename(&track, t, cache_file, ".kf.txt");
             if !filename.to_str().unwrap().is_empty() {
                 let mut file = File::create(filename)?;
                 write!(file, "# keyframe format v1\nfps 0\n")?;
@@ -162,7 +162,7 @@ fn do_indexing(
 
     print_progress!(args.progress, "Writing index...");
 
-    index.WriteIndex(&cache_file).unwrap();
+    index.WriteIndex(cache_file).unwrap();
 
     print_progress!(args.progress, "Done.");
 

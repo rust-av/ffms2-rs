@@ -9,12 +9,20 @@ license = "MIT"
 
 [dependencies]
 ffms2-sys = { path = "./ffms2-sys"}
+thiserror = "1.0.50"
 cfg-if = "1.0"
 paste = "1.0"
 ffmpeg-the-third = "1.1.2"
 
 [dev-dependencies]
 structopt = "0.3"
+
+[lints.rust]
+non_snake_case = "allow"
+non_camel_case_types = "allow"
+
+[lints.clippy]
+upper_case_acronyms = "allow"
 
 [workspace]
 members = ["ffms2-sys"]
