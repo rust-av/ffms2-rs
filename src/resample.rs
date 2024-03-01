@@ -1,12 +1,8 @@
-use ffms2_sys::{
-    FFMS_AudioDitherMethod, FFMS_DestroyResampleOptions, FFMS_MatrixEncoding,
-    FFMS_MixingCoefficientType, FFMS_ResampleFilterType, FFMS_ResampleOptions,
-    FFMS_SampleFormat,
-};
+use ffms2_sys::{FFMS_ResampleOptions, FFMS_SampleFormat};
 
 create_enum!(
     SampleFormat,
-    FFMS_SampleFormat,
+    ffms2_sys::FFMS_SampleFormat,
     sample_format,
     (FMT_U8, FMT_S16, FMT_S32, FMT_FLT, FMT_DBL)
 );
@@ -67,7 +63,7 @@ create_struct!(
         0,
         FFMS_SampleFormat::FFMS_FMT_U8,
         0,
-        FFMS_MixingCoefficientType::FFMS_MIXING_COEFFICIENT_Q8,
+        ffms2_sys::FFMS_MixingCoefficientType::FFMS_MIXING_COEFFICIENT_Q8,
         0.0,
         0.0,
         0.0,
@@ -77,24 +73,14 @@ create_struct!(
         0,
         0,
         0.0,
-        FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_NONE,
-        FFMS_ResampleFilterType::FFMS_RESAMPLE_FILTER_CUBIC,
+        ffms2_sys::FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_NONE,
+        ffms2_sys::FFMS_ResampleFilterType::FFMS_RESAMPLE_FILTER_CUBIC,
         0,
-        FFMS_AudioDitherMethod::FFMS_RESAMPLE_DITHER_NONE
+        ffms2_sys::FFMS_AudioDitherMethod::FFMS_RESAMPLE_DITHER_NONE
     )
 );
 
 impl ResampleOptions {
-    pub(crate) fn create_struct(resample: &FFMS_ResampleOptions) -> Self {
-        ResampleOptions {
-            resample: *resample,
-        }
-    }
-
-    pub(crate) fn as_ptr(&self) -> *const FFMS_ResampleOptions {
-        &self.resample
-    }
-
     pub fn set_channel_layout(&mut self, channel_layout: i64) {
         self.resample.ChannelLayout = channel_layout;
     }
@@ -107,13 +93,23 @@ impl ResampleOptions {
     pub fn normalize(&mut self, normalize: bool) {
         self.resample.Normalize = normalize as i32;
     }
+
+    pub(crate) fn create_struct(resample: &FFMS_ResampleOptions) -> Self {
+        ResampleOptions {
+            resample: *resample,
+        }
+    }
+
+    pub(crate) fn as_ptr(&self) -> *const FFMS_ResampleOptions {
+        &self.resample
+    }
 }
 
 impl Drop for ResampleOptions {
     fn drop(&mut self) {
         let raw_resample = Box::into_raw(Box::new(self.resample));
         unsafe {
-            FFMS_DestroyResampleOptions(raw_resample);
+            ffms2_sys::FFMS_DestroyResampleOptions(raw_resample);
         }
     }
 }

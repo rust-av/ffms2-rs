@@ -6,11 +6,11 @@ use std::ffi::CString;
 
 use ffmpeg_the_third::ffi::AVPixelFormat;
 use ffmpeg_the_third::format::Pixel;
-use ffms2_sys::*;
 
-use crate::video::*;
+use ffms2_sys::{FFMS_Frame, FFMS_FrameInfo, FFMS_Resizers};
 
 use crate::error::{InternalError, Result};
+use crate::video::VideoSource;
 
 create_enum!(
     Resizers,
@@ -142,7 +142,11 @@ impl Frame {
         let mut error = InternalError::new();
 
         let c_frame = unsafe {
-            FFMS_GetFrame(V.as_mut_ptr(), n as i32, error.as_mut_ptr())
+            ffms2_sys::FFMS_GetFrame(
+                V.as_mut_ptr(),
+                n as i32,
+                error.as_mut_ptr(),
+            )
         };
 
         if c_frame.is_null() {
@@ -158,7 +162,11 @@ impl Frame {
         let mut error = InternalError::new();
 
         let c_frame = unsafe {
-            FFMS_GetFrameByTime(V.as_mut_ptr(), Time, error.as_mut_ptr())
+            ffms2_sys::FFMS_GetFrameByTime(
+                V.as_mut_ptr(),
+                Time,
+                error.as_mut_ptr(),
+            )
         };
 
         if c_frame.is_null() {
@@ -172,7 +180,7 @@ impl Frame {
 
     pub fn GetPixFmt(Name: &str) -> i32 {
         let source = CString::new(Name).unwrap();
-        unsafe { FFMS_GetPixFmt(source.as_ptr()) }
+        unsafe { ffms2_sys::FFMS_GetPixFmt(source.as_ptr()) }
     }
 
     pub fn set_data(&mut self, data: [&[u8]; 4]) {

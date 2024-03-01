@@ -6,10 +6,9 @@ use std::path::Path;
 
 use ffms2_sys::FFMS_AudioProperties;
 
-use crate::index::*;
-use crate::resample::*;
-
 use crate::error::{InternalError, Result};
+use crate::index::Index;
+use crate::resample::ResampleOptions;
 
 simple_enum!(
     AudioChannel,

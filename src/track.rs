@@ -2,23 +2,18 @@ use std::path::Path;
 
 use std::ffi::CString;
 
-use ffms2_sys::{
-    FFMS_GetFrameInfo, FFMS_GetNumFrames, FFMS_GetTimeBase,
-    FFMS_GetTrackFromAudio, FFMS_GetTrackFromIndex, FFMS_GetTrackFromVideo,
-    FFMS_GetTrackType, FFMS_Track, FFMS_TrackTimeBase, FFMS_TrackType,
-    FFMS_WriteTimecodes,
-};
+use ffms2_sys::FFMS_TrackTimeBase;
 
 use crate::error::{Error, InternalError, Result};
 
-use crate::audio::*;
-use crate::frame::*;
-use crate::index::*;
-use crate::video::*;
+use crate::audio::AudioSource;
+use crate::frame::FrameInfo;
+use crate::index::Index;
+use crate::video::VideoSource;
 
 create_enum!(
     TrackType,
-    FFMS_TrackType,
+    ffms2_sys::FFMS_TrackType,
     track_type,
     (
         TYPE_UNKNOWN,
@@ -32,7 +27,7 @@ create_enum!(
 
 from_i32!(
     TrackType,
-    FFMS_TrackType,
+    ffms2_sys::FFMS_TrackType,
     (
         TYPE_UNKNOWN,
         TYPE_VIDEO,
@@ -52,7 +47,7 @@ create_struct!(
 );
 
 pub struct Track {
-    track: *mut FFMS_Track,
+    track: *mut ffms2_sys::FFMS_Track,
 }
 
 unsafe impl Send for Track {}
@@ -60,18 +55,20 @@ unsafe impl Send for Track {}
 impl Track {
     pub fn TrackFromIndex(index: &Index, Track: usize) -> Result<Self> {
         let track = unsafe {
-            FFMS_GetTrackFromIndex(index.as_mut_ptr(), Track as i32)
+            ffms2_sys::FFMS_GetTrackFromIndex(index.as_mut_ptr(), Track as i32)
         };
         Self::evaluate_track(track)
     }
 
     pub fn TrackFromVideo(V: &mut VideoSource) -> Result<Self> {
-        let track = unsafe { FFMS_GetTrackFromVideo(V.as_mut_ptr()) };
+        let track =
+            unsafe { ffms2_sys::FFMS_GetTrackFromVideo(V.as_mut_ptr()) };
         Self::evaluate_track(track)
     }
 
     pub fn TrackFromAudio(A: &mut AudioSource) -> Result<Self> {
-        let track = unsafe { FFMS_GetTrackFromAudio(A.as_mut_ptr()) };
+        let track =
+            unsafe { ffms2_sys::FFMS_GetTrackFromAudio(A.as_mut_ptr()) };
         Self::evaluate_track(track)
     }
 
@@ -79,7 +76,7 @@ impl Track {
         let source = CString::new(TimecodeFile.to_str().unwrap()).unwrap();
         let mut error = InternalError::new();
         let err = unsafe {
-            FFMS_WriteTimecodes(
+            ffms2_sys::FFMS_WriteTimecodes(
                 self.track,
                 source.as_ptr(),
                 error.as_mut_ptr(),
@@ -94,13 +91,14 @@ impl Track {
     }
 
     pub fn FrameInfo(&self, Frame: usize) -> FrameInfo {
-        let res_frame = unsafe { FFMS_GetFrameInfo(self.track, Frame as i32) };
+        let res_frame =
+            unsafe { ffms2_sys::FFMS_GetFrameInfo(self.track, Frame as i32) };
         let ref_frame = unsafe { &*res_frame };
         FrameInfo::create_struct(ref_frame)
     }
 
     pub fn TimeBase(&self) -> TrackTimeBase {
-        let res_track = unsafe { FFMS_GetTimeBase(self.track) };
+        let res_track = unsafe { ffms2_sys::FFMS_GetTimeBase(self.track) };
         let ref_track = unsafe { &*res_track };
         TrackTimeBase {
             track_time_base: *ref_track,
@@ -108,12 +106,12 @@ impl Track {
     }
 
     pub fn TrackType(&self) -> TrackType {
-        let track_type = unsafe { FFMS_GetTrackType(self.track) };
+        let track_type = unsafe { ffms2_sys::FFMS_GetTrackType(self.track) };
         TrackType::from_i32(track_type)
     }
 
     pub fn NumFrames(&self) -> Result<usize> {
-        let num_frames = unsafe { FFMS_GetNumFrames(self.track) };
+        let num_frames = unsafe { ffms2_sys::FFMS_GetNumFrames(self.track) };
         if num_frames < 0 {
             Err(Error::Frames)
         } else {
@@ -121,8 +119,8 @@ impl Track {
         }
     }
 
-    fn evaluate_track(track: *mut FFMS_Track) -> Result<Self> {
-        let num_frames = unsafe { FFMS_GetNumFrames(track) };
+    fn evaluate_track(track: *mut ffms2_sys::FFMS_Track) -> Result<Self> {
+        let num_frames = unsafe { ffms2_sys::FFMS_GetNumFrames(track) };
         if num_frames < 0 {
             Err(Error::Track)
         } else {

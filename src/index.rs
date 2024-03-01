@@ -7,7 +7,7 @@ use std::os::raw::c_void;
 use std::path::Path;
 
 use crate::error::{IndexErrorHandling, InternalError, Result};
-use crate::track::*;
+use crate::track::TrackType;
 
 pub struct Index {
     index: *mut ffms2_sys::FFMS_Index,

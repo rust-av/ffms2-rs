@@ -4,8 +4,8 @@ use std::path::Path;
 use ffms2_sys::{FFMS_ColorRanges, FFMS_SeekMode, FFMS_VideoProperties};
 
 use crate::error::{InternalError, Result};
-use crate::frame::*;
-use crate::index::*;
+use crate::frame::Resizers;
+use crate::index::Index;
 
 create_enum!(
     SeekMode,

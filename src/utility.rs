@@ -10,7 +10,7 @@ macro_rules! simple_enum {
 }
 
 macro_rules! create_enum {
-    ($enum:ident, $type:ident, $func_name:ident,
+    ($enum:ident, $type:ty, $func_name:ident,
     ($($field_name:ident),*$(,)*)) => {
 
         simple_enum!($enum, ($($field_name),*));
@@ -30,7 +30,7 @@ macro_rules! create_enum {
 }
 
 macro_rules! from_i32 {
-    ($enum:ident, $type:ident,
+    ($enum:ident, $type:ty,
     ($($field_name:ident),*$(,)*)) => {
         impl $enum {
             paste::item! {
@@ -56,8 +56,7 @@ macro_rules! display {
                         $enum::$field_name => $field_err,
                     )*
                 };
-
-                write!(f, "{}", v)
+                v.fmt(f)
             }
         }
     }
@@ -77,7 +76,7 @@ macro_rules! errors {
 }
 
 macro_rules! set_struct {
-    ($struct:ident, $param:ident, $type:tt) => {
+    ($struct:ident, $param:ident, $type:ty) => {
         pub struct $struct {
             $param: $type,
         }
@@ -101,7 +100,7 @@ macro_rules! default_struct {
 }
 
 macro_rules! implement_deref {
-    ($struct:ident, $param:ident, $type:tt) => {
+    ($struct:ident, $param:ident, $type:ty) => {
         impl std::ops::Deref for $struct {
             type Target = $type;
 
@@ -120,7 +119,7 @@ macro_rules! implement_deref {
 
 macro_rules! create_struct {
     ($struct:ident, $param:ident, $type:tt,
-     ($($field_name:ident),*$(,)*),
+          ($($field_name:ident),*$(,)*),
      ($($field_default_expr:expr),*$(,)*)
      ) => {
 
