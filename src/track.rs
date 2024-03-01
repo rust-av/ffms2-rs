@@ -21,17 +21,6 @@ pub enum TrackType {
 }
 
 impl TrackType {
-    pub(crate) const fn ffms2_track_type(self) -> FFMS_TrackType {
-        match self {
-            Self::Unknown => FFMS_TrackType::FFMS_TYPE_UNKNOWN,
-            Self::Video => FFMS_TrackType::FFMS_TYPE_VIDEO,
-            Self::Audio => FFMS_TrackType::FFMS_TYPE_AUDIO,
-            Self::Data => FFMS_TrackType::FFMS_TYPE_DATA,
-            Self::Subtitle => FFMS_TrackType::FFMS_TYPE_SUBTITLE,
-            Self::Attachment => FFMS_TrackType::FFMS_TYPE_ATTACHMENT,
-        }
-    }
-
     pub(crate) const fn new(track_type: i32) -> Self {
         match track_type {
             e if e == FFMS_TrackType::FFMS_TYPE_UNKNOWN as i32 => {
@@ -47,6 +36,17 @@ impl TrackType {
                 Self::Attachment
             }
             _ => Self::Unknown,
+        }
+    }
+
+    pub(crate) const fn ffms2_track_type(self) -> FFMS_TrackType {
+        match self {
+            Self::Unknown => FFMS_TrackType::FFMS_TYPE_UNKNOWN,
+            Self::Video => FFMS_TrackType::FFMS_TYPE_VIDEO,
+            Self::Audio => FFMS_TrackType::FFMS_TYPE_AUDIO,
+            Self::Data => FFMS_TrackType::FFMS_TYPE_DATA,
+            Self::Subtitle => FFMS_TrackType::FFMS_TYPE_SUBTITLE,
+            Self::Attachment => FFMS_TrackType::FFMS_TYPE_ATTACHMENT,
         }
     }
 }
