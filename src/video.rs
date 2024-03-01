@@ -43,49 +43,137 @@ create_enum!(
     (CR_UNSPECIFIED, CR_MPEG, CR_JPEG)
 );
 
-create_struct!(
-    VideoProperties,
-    video_properties,
-    FFMS_VideoProperties,
-    (
-        FPSDenominator,
-        FPSNumerator,
-        RFFDenominator,
-        RFFNumerator,
-        NumFrames,
-        SARNum,
-        SARDen,
-        CropTop,
-        CropBottom,
-        CropLeft,
-        CropRight,
-        TopFieldFirst,
-        ColorSpace,
-        ColorRange,
-        FirstTime,
-        LastTime,
-        Rotation,
-        Stereo3DType,
-        Stereo3DFlags,
-        LastEndTime,
-        HasMasteringDisplayPrimaries,
-        MasteringDisplayPrimariesX,
-        MasteringDisplayPrimariesY,
-        MasteringDisplayWhitePointX,
-        MasteringDisplayWhitePointY,
-        HasMasteringDisplayLuminance,
-        MasteringDisplayMinLuminance,
-        MasteringDisplayMaxLuminance,
-        HasContentLightLevel,
-        ContentLightLevelMax,
-        ContentLightLevelAverage,
-        Flip
-    ),
-    (
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0, 0, 0.0, 0,
-        [0.0; 3], [0.0; 3], 0.0, 0.0, 0, 0.0, 0.0, 0, 0, 0, 0
-    )
-);
+pub struct VideoProperties(FFMS_VideoProperties);
+
+impl VideoProperties {
+    pub const fn fps_numerator(&self) -> usize {
+        self.0.FPSNumerator as usize
+    }
+
+    pub const fn fps_denominator(&self) -> usize {
+        self.0.FPSDenominator as usize
+    }
+
+    pub const fn rff_numerator(&self) -> usize {
+        self.0.RFFNumerator as usize
+    }
+
+    pub const fn rff_denominator(&self) -> usize {
+        self.0.RFFDenominator as usize
+    }
+
+    pub const fn frames_number(&self) -> usize {
+        self.0.NumFrames as usize
+    }
+
+    pub const fn sar_numerator(&self) -> usize {
+        self.0.SARNum as usize
+    }
+
+    pub const fn sar_denominator(&self) -> usize {
+        self.0.SARDen as usize
+    }
+
+    pub const fn crop_top(&self) -> i32 {
+        self.0.CropTop
+    }
+
+    pub const fn crop_bottom(&self) -> i32 {
+        self.0.CropBottom
+    }
+
+    pub const fn crop_left(&self) -> i32 {
+        self.0.CropLeft
+    }
+
+    pub const fn crop_right(&self) -> i32 {
+        self.0.CropRight
+    }
+
+    pub const fn top_field_first(&self) -> i32 {
+        self.0.TopFieldFirst
+    }
+
+    pub const fn colorspace(&self) -> i32 {
+        self.0.ColorSpace
+    }
+
+    pub const fn color_range(&self) -> i32 {
+        self.0.ColorRange
+    }
+
+    pub const fn first_time(&self) -> f64 {
+        self.0.FirstTime
+    }
+
+    pub const fn last_time(&self) -> f64 {
+        self.0.LastTime
+    }
+
+    pub const fn rotation(&self) -> i32 {
+        self.0.Rotation
+    }
+
+    pub const fn stereo3d_type(&self) -> i32 {
+        self.0.Stereo3DType
+    }
+
+    pub const fn stereo3d_flags(&self) -> i32 {
+        self.0.Stereo3DFlags
+    }
+
+    pub const fn last_end_time(&self) -> f64 {
+        self.0.LastEndTime
+    }
+
+    pub const fn has_mastering_display_primaries(&self) -> i32 {
+        self.0.HasMasteringDisplayPrimaries
+    }
+
+    pub const fn mastering_display_primaries_x(&self) -> [f64; 3] {
+        self.0.MasteringDisplayPrimariesX
+    }
+
+    pub const fn mastering_display_primaries_y(&self) -> [f64; 3] {
+        self.0.MasteringDisplayPrimariesY
+    }
+
+    pub const fn mastering_display_white_point_x(&self) -> f64 {
+        self.0.MasteringDisplayWhitePointX
+    }
+
+    pub const fn mastering_display_white_point_y(&self) -> f64 {
+        self.0.MasteringDisplayWhitePointY
+    }
+
+    pub const fn has_mastering_display_luminance(&self) -> i32 {
+        self.0.HasMasteringDisplayLuminance
+    }
+
+    pub const fn mastering_display_min_luminance(&self) -> f64 {
+        self.0.MasteringDisplayMinLuminance
+    }
+
+    pub const fn mastering_display_max_luminance(&self) -> f64 {
+        self.0.MasteringDisplayMaxLuminance
+    }
+
+    pub const fn has_content_light_level(&self) -> i32 {
+        self.0.HasContentLightLevel
+    }
+
+    pub const fn content_light_level_max(&self) -> u32 {
+        self.0.ContentLightLevelMax
+    }
+
+    pub const fn content_light_level_average(&self) -> u32 {
+        self.0.ContentLightLevelAverage
+    }
+
+    pub const fn flip(&self) -> i32 {
+        self.0.Flip
+    }
+}
 
 pub struct VideoSource {
     video_source: *mut ffms2_sys::FFMS_VideoSource,
@@ -127,9 +215,7 @@ impl VideoSource {
             unsafe { ffms2_sys::FFMS_GetVideoProperties(self.video_source) };
         let ref_video = unsafe { &*video_prop };
 
-        VideoProperties {
-            video_properties: *ref_video,
-        }
+        VideoProperties(*ref_video)
     }
 
     pub fn SetInputFormatV(
