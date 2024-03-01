@@ -81,9 +81,15 @@ impl InternalError {
 /// FFMS2 error types
 #[derive(Debug, Error)]
 pub enum Error {
-    /// FFMS2 errors.
-    #[error("FFSM2 error")]
+    /// An FFMS2 API error.
+    #[error("FFSM2 API error")]
     FFMS2(String),
+    /// Failure in retrieving the track.
+    #[error("Impossible to retrieve the track")]
+    Track,
+    /// Failure in getting frames.
+    #[error("Impossible to get frames")]
+    Frames,
 }
 
 impl From<InternalError> for Error {

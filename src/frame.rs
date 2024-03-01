@@ -1,13 +1,16 @@
-use crate::video::*;
-use crate::*;
+use std::mem;
+use std::ptr;
+use std::slice;
+
+use std::ffi::CString;
 
 use ffmpeg_the_third::ffi::AVPixelFormat;
 use ffmpeg_the_third::format::Pixel;
 use ffms2_sys::*;
 
-use std::ffi::CString;
-use std::ptr;
-use std::slice;
+use crate::video::*;
+
+use crate::error::{InternalError, Result};
 
 create_enum!(
     Resizers,
@@ -135,15 +138,15 @@ pub struct FrameResolution {
 }
 
 impl Frame {
-    pub fn GetFrame(V: &mut VideoSource, n: usize) -> Result<Self, Error> {
-        let mut error: Error = Default::default();
+    pub fn GetFrame(V: &mut VideoSource, n: usize) -> Result<Self> {
+        let mut error = InternalError::new();
 
         let c_frame = unsafe {
             FFMS_GetFrame(V.as_mut_ptr(), n as i32, error.as_mut_ptr())
         };
 
         if c_frame.is_null() {
-            Err(error)
+            Err(error.into())
         } else {
             let ref_frame = unsafe { &*c_frame };
 
@@ -151,18 +154,15 @@ impl Frame {
         }
     }
 
-    pub fn GetFrameByTime(
-        V: &mut VideoSource,
-        Time: f64,
-    ) -> Result<Self, Error> {
-        let mut error: Error = Default::default();
+    pub fn GetFrameByTime(V: &mut VideoSource, Time: f64) -> Result<Self> {
+        let mut error = InternalError::new();
 
         let c_frame = unsafe {
             FFMS_GetFrameByTime(V.as_mut_ptr(), Time, error.as_mut_ptr())
         };
 
         if c_frame.is_null() {
-            Err(error)
+            Err(error.into())
         } else {
             let ref_frame = unsafe { &*c_frame };
 

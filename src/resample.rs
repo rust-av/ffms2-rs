@@ -1,4 +1,15 @@
-use crate::*;
+use ffms2_sys::{
+    FFMS_AudioDitherMethod, FFMS_DestroyResampleOptions, FFMS_MatrixEncoding,
+    FFMS_MixingCoefficientType, FFMS_ResampleFilterType, FFMS_ResampleOptions,
+    FFMS_SampleFormat,
+};
+
+create_enum!(
+    SampleFormat,
+    FFMS_SampleFormat,
+    sample_format,
+    (FMT_U8, FMT_S16, FMT_S32, FMT_FLT, FMT_DBL)
+);
 
 simple_enum!(
     ResampleFilterType,

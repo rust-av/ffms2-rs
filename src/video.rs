@@ -1,11 +1,11 @@
-use crate::frame::*;
-use crate::index::*;
-use crate::*;
-
-use ffms2_sys::*;
-
 use std::ffi::CString;
 use std::path::Path;
+
+use ffms2_sys::{FFMS_ColorRanges, FFMS_SeekMode, FFMS_VideoProperties};
+
+use crate::error::{InternalError, Result};
+use crate::frame::*;
+use crate::index::*;
 
 create_enum!(
     SeekMode,
@@ -88,7 +88,7 @@ create_struct!(
 );
 
 pub struct VideoSource {
-    video_source: *mut FFMS_VideoSource,
+    video_source: *mut ffms2_sys::FFMS_VideoSource,
 }
 
 unsafe impl Send for VideoSource {}
@@ -100,12 +100,12 @@ impl VideoSource {
         Index: &Index,
         Threads: usize,
         SeekMode: SeekMode,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self> {
         let source = CString::new(SourceFile.to_str().unwrap()).unwrap();
-        let mut error: Error = Default::default();
+        let mut error = InternalError::new();
         let seek = SeekMode::to_seek_mode(SeekMode) as i32;
         let video_source = unsafe {
-            FFMS_CreateVideoSource(
+            ffms2_sys::FFMS_CreateVideoSource(
                 source.as_ptr(),
                 Track as i32,
                 Index.as_mut_ptr(),
@@ -116,14 +116,15 @@ impl VideoSource {
         };
 
         if video_source.is_null() {
-            Err(error)
+            Err(error.into())
         } else {
             Ok(VideoSource { video_source })
         }
     }
 
     pub fn GetVideoProperties(&self) -> VideoProperties {
-        let video_prop = unsafe { FFMS_GetVideoProperties(self.video_source) };
+        let video_prop =
+            unsafe { ffms2_sys::FFMS_GetVideoProperties(self.video_source) };
         let ref_video = unsafe { &*video_prop };
 
         VideoProperties {
@@ -136,11 +137,11 @@ impl VideoSource {
         ColorSpace: usize,
         ColorRange: ColorRanges,
         PixelFormat: usize,
-    ) -> Result<(), Error> {
-        let mut error: Error = Default::default();
+    ) -> Result<()> {
+        let mut error = InternalError::new();
         let colorange = ColorRanges::to_color_ranges(ColorRange) as i32;
         let err = unsafe {
-            FFMS_SetInputFormatV(
+            ffms2_sys::FFMS_SetInputFormatV(
                 self.video_source,
                 ColorSpace as i32,
                 colorange,
@@ -150,7 +151,7 @@ impl VideoSource {
         };
 
         if err != 0 {
-            Err(error)
+            Err(error.into())
         } else {
             Ok(())
         }
@@ -158,7 +159,7 @@ impl VideoSource {
 
     pub fn ResetInputFormatV(&self) {
         unsafe {
-            FFMS_ResetInputFormatV(self.video_source);
+            ffms2_sys::FFMS_ResetInputFormatV(self.video_source);
         }
     }
 
@@ -168,12 +169,12 @@ impl VideoSource {
         Width: usize,
         Height: usize,
         Resizer: Resizers,
-    ) -> Result<(), Error> {
-        let mut error: Error = Default::default();
+    ) -> Result<()> {
+        let mut error = InternalError::new();
         let resize = Resizers::to_resizers(Resizer) as i32;
         TargetFormats.push(-1);
         let err = unsafe {
-            FFMS_SetOutputFormatV2(
+            ffms2_sys::FFMS_SetOutputFormatV2(
                 self.video_source,
                 TargetFormats.as_ptr(),
                 Width as i32,
@@ -185,7 +186,7 @@ impl VideoSource {
         TargetFormats.pop();
 
         if err != 0 {
-            Err(error)
+            Err(error.into())
         } else {
             Ok(())
         }
@@ -193,11 +194,11 @@ impl VideoSource {
 
     pub fn ResetOutputFormatV(&self) {
         unsafe {
-            FFMS_ResetOutputFormatV(self.video_source);
+            ffms2_sys::FFMS_ResetOutputFormatV(self.video_source);
         }
     }
 
-    pub(crate) fn as_mut_ptr(&mut self) -> *mut FFMS_VideoSource {
+    pub(crate) fn as_mut_ptr(&mut self) -> *mut ffms2_sys::FFMS_VideoSource {
         self.video_source
     }
 }
@@ -205,7 +206,7 @@ impl VideoSource {
 impl Drop for VideoSource {
     fn drop(&mut self) {
         unsafe {
-            FFMS_DestroyVideoSource(self.video_source);
+            ffms2_sys::FFMS_DestroyVideoSource(self.video_source);
         }
     }
 }

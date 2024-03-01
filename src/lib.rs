@@ -9,14 +9,10 @@ pub mod resample;
 pub mod track;
 pub mod video;
 
-use ffms2_sys::*;
-
-create_enum!(
-    SampleFormat,
-    FFMS_SampleFormat,
-    sample_format,
-    (FMT_U8, FMT_S16, FMT_S32, FMT_FLT, FMT_DBL)
-);
+use ffms2_sys::{
+    FFMS_Deinit, FFMS_GetLogLevel, FFMS_GetVersion, FFMS_Init, FFMS_LogLevels,
+    FFMS_SetLogLevel,
+};
 
 create_enum!(
     LogLevel,
