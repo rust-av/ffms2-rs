@@ -51,15 +51,17 @@ impl TrackType {
     }
 }
 
-pub struct TrackTimebase(FFMS_TrackTimeBase);
+pub struct TrackTimebase {
+    pub numerator: u64,
+    pub denominator: u64,
+}
 
 impl TrackTimebase {
-    pub const fn numerator(&self) -> i64 {
-        self.0.Num
-    }
-
-    pub const fn denominator(&self) -> i64 {
-        self.0.Den
+    const fn new(timebase: FFMS_TrackTimeBase) -> Self {
+        Self {
+            numerator: timebase.Num as u64,
+            denominator: timebase.Den as u64,
+        }
     }
 }
 
@@ -117,7 +119,7 @@ impl Track {
     pub fn TimeBase(&self) -> TrackTimebase {
         let res_track = unsafe { ffms2_sys::FFMS_GetTimeBase(self.track) };
         let ref_track = unsafe { &*res_track };
-        TrackTimebase(*ref_track)
+        TrackTimebase::new(*ref_track)
     }
 
     pub fn TrackType(&self) -> TrackType {
