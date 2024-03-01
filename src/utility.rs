@@ -99,24 +99,6 @@ macro_rules! default_struct {
     }
 }
 
-macro_rules! implement_deref {
-    ($struct:ident, $param:ident, $type:ty) => {
-        impl std::ops::Deref for $struct {
-            type Target = $type;
-
-            fn deref(&self) -> &Self::Target {
-                &self.$param
-            }
-        }
-
-        impl std::ops::DerefMut for $struct {
-            fn deref_mut(&mut self) -> &mut Self::Target {
-                &mut self.$param
-            }
-        }
-    };
-}
-
 macro_rules! create_struct {
     ($struct:ident, $param:ident, $type:tt,
           ($($field_name:ident),*$(,)*),
@@ -135,7 +117,6 @@ macro_rules! create_struct {
                        ($($field_name,)*),
                        ($($field_default_expr,)*));
 
-        implement_deref!($struct, $param, $type);
 
     }
 }

@@ -2,7 +2,7 @@ use std::path::Path;
 
 use std::ffi::CString;
 
-use ffms2_sys::FFMS_TrackTimeBase;
+use ffms2_sys::{FFMS_TrackTimeBase, FFMS_TrackType};
 
 use crate::error::{Error, InternalError, Result};
 
@@ -11,40 +11,57 @@ use crate::frame::FrameInfo;
 use crate::index::Index;
 use crate::video::VideoSource;
 
-create_enum!(
-    TrackType,
-    ffms2_sys::FFMS_TrackType,
-    track_type,
-    (
-        TYPE_UNKNOWN,
-        TYPE_VIDEO,
-        TYPE_AUDIO,
-        TYPE_DATA,
-        TYPE_SUBTITLE,
-        TYPE_ATTACHMENT,
-    )
-);
+pub enum TrackType {
+    Unknown,
+    Video,
+    Audio,
+    Data,
+    Subtitle,
+    Attachment,
+}
 
-from_i32!(
-    TrackType,
-    ffms2_sys::FFMS_TrackType,
-    (
-        TYPE_UNKNOWN,
-        TYPE_VIDEO,
-        TYPE_AUDIO,
-        TYPE_DATA,
-        TYPE_SUBTITLE,
-        TYPE_ATTACHMENT,
-    )
-);
+impl TrackType {
+    pub(crate) const fn ffms2_track_type(self) -> FFMS_TrackType {
+        match self {
+            Self::Unknown => FFMS_TrackType::FFMS_TYPE_UNKNOWN,
+            Self::Video => FFMS_TrackType::FFMS_TYPE_VIDEO,
+            Self::Audio => FFMS_TrackType::FFMS_TYPE_AUDIO,
+            Self::Data => FFMS_TrackType::FFMS_TYPE_DATA,
+            Self::Subtitle => FFMS_TrackType::FFMS_TYPE_SUBTITLE,
+            Self::Attachment => FFMS_TrackType::FFMS_TYPE_ATTACHMENT,
+        }
+    }
 
-create_struct!(
-    TrackTimeBase,
-    track_time_base,
-    FFMS_TrackTimeBase,
-    (Num, Den),
-    (0, 0)
-);
+    pub(crate) const fn new(track_type: i32) -> Self {
+        match track_type {
+            e if e == FFMS_TrackType::FFMS_TYPE_UNKNOWN as i32 => {
+                Self::Unknown
+            }
+            e if e == FFMS_TrackType::FFMS_TYPE_VIDEO as i32 => Self::Video,
+            e if e == FFMS_TrackType::FFMS_TYPE_AUDIO as i32 => Self::Audio,
+            e if e == FFMS_TrackType::FFMS_TYPE_DATA as i32 => Self::Data,
+            e if e == FFMS_TrackType::FFMS_TYPE_SUBTITLE as i32 => {
+                Self::Subtitle
+            }
+            e if e == FFMS_TrackType::FFMS_TYPE_ATTACHMENT as i32 => {
+                Self::Attachment
+            }
+            _ => Self::Unknown,
+        }
+    }
+}
+
+pub struct TrackTimebase(FFMS_TrackTimeBase);
+
+impl TrackTimebase {
+    pub const fn numerator(&self) -> i64 {
+        self.0.Num
+    }
+
+    pub const fn denominator(&self) -> i64 {
+        self.0.Den
+    }
+}
 
 pub struct Track {
     track: *mut ffms2_sys::FFMS_Track,
@@ -97,17 +114,15 @@ impl Track {
         FrameInfo::create_struct(ref_frame)
     }
 
-    pub fn TimeBase(&self) -> TrackTimeBase {
+    pub fn TimeBase(&self) -> TrackTimebase {
         let res_track = unsafe { ffms2_sys::FFMS_GetTimeBase(self.track) };
         let ref_track = unsafe { &*res_track };
-        TrackTimeBase {
-            track_time_base: *ref_track,
-        }
+        TrackTimebase(*ref_track)
     }
 
     pub fn TrackType(&self) -> TrackType {
         let track_type = unsafe { ffms2_sys::FFMS_GetTrackType(self.track) };
-        TrackType::from_i32(track_type)
+        TrackType::new(track_type)
     }
 
     pub fn NumFrames(&self) -> Result<usize> {

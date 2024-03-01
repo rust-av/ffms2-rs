@@ -136,7 +136,7 @@ impl Index {
         let num_tracks = unsafe {
             ffms2_sys::FFMS_GetFirstTrackOfType(
                 self.index,
-                TrackType::to_track_type(TrackType) as i32,
+                TrackType::ffms2_track_type(TrackType) as i32,
                 error.as_mut_ptr(),
             )
         };
@@ -155,7 +155,7 @@ impl Index {
         let num_tracks = unsafe {
             ffms2_sys::FFMS_GetFirstIndexedTrackOfType(
                 self.index,
-                TrackType::to_track_type(TrackType) as i32,
+                TrackType::ffms2_track_type(TrackType) as i32,
                 error.as_mut_ptr(),
             )
         };
@@ -229,7 +229,7 @@ impl Indexer {
         let track_type = unsafe {
             ffms2_sys::FFMS_GetTrackTypeI(self.indexer, Track as i32)
         };
-        TrackType::from_i32(track_type)
+        TrackType::new(track_type)
     }
 
     pub fn CancelIndexing(&self) {
@@ -277,7 +277,7 @@ impl Indexer {
         unsafe {
             ffms2_sys::FFMS_TrackTypeIndexSettings(
                 self.indexer,
-                TrackType::to_track_type(TrackType) as i32,
+                TrackType::ffms2_track_type(TrackType) as i32,
                 Index as i32,
                 0,
             );

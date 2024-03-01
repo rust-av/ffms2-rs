@@ -117,14 +117,14 @@ impl AudioSource {
     pub fn GetAudio<T>(&self, Start: usize, Count: usize) -> Result<Vec<T>> {
         let mut error = InternalError::new();
         let audio_prop = self.GetAudioProperties();
-        let num_samples = audio_prop.NumSamples;
+        let num_samples = audio_prop.audio_properties.NumSamples;
 
         if Start as i64 > (num_samples - 1) || Count as i64 > (num_samples - 1)
         {
             panic!("Requesting samples beyond the stream end");
         }
 
-        let num_channels = audio_prop.Channels;
+        let num_channels = audio_prop.audio_properties.Channels;
         let num_elements = Count * num_channels as usize;
 
         let Buf: Vec<T> = Vec::with_capacity(num_elements);
