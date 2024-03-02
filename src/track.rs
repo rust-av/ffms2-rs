@@ -21,6 +21,17 @@ pub enum TrackType {
 }
 
 impl TrackType {
+    pub(crate) const fn ffms2_track_type(self) -> FFMS_TrackType {
+        match self {
+            Self::Unknown => FFMS_TrackType::FFMS_TYPE_UNKNOWN,
+            Self::Video => FFMS_TrackType::FFMS_TYPE_VIDEO,
+            Self::Audio => FFMS_TrackType::FFMS_TYPE_AUDIO,
+            Self::Data => FFMS_TrackType::FFMS_TYPE_DATA,
+            Self::Subtitle => FFMS_TrackType::FFMS_TYPE_SUBTITLE,
+            Self::Attachment => FFMS_TrackType::FFMS_TYPE_ATTACHMENT,
+        }
+    }
+
     pub(crate) const fn new(track_type: i32) -> Self {
         match track_type {
             e if e == FFMS_TrackType::FFMS_TYPE_UNKNOWN as i32 => {
@@ -38,30 +49,17 @@ impl TrackType {
             _ => Self::Unknown,
         }
     }
-
-    pub(crate) const fn ffms2_track_type(self) -> FFMS_TrackType {
-        match self {
-            Self::Unknown => FFMS_TrackType::FFMS_TYPE_UNKNOWN,
-            Self::Video => FFMS_TrackType::FFMS_TYPE_VIDEO,
-            Self::Audio => FFMS_TrackType::FFMS_TYPE_AUDIO,
-            Self::Data => FFMS_TrackType::FFMS_TYPE_DATA,
-            Self::Subtitle => FFMS_TrackType::FFMS_TYPE_SUBTITLE,
-            Self::Attachment => FFMS_TrackType::FFMS_TYPE_ATTACHMENT,
-        }
-    }
 }
 
-pub struct TrackTimebase {
-    pub numerator: u64,
-    pub denominator: u64,
-}
+pub struct TrackTimebase(FFMS_TrackTimeBase);
 
 impl TrackTimebase {
-    const fn new(timebase: FFMS_TrackTimeBase) -> Self {
-        Self {
-            numerator: timebase.Num as u64,
-            denominator: timebase.Den as u64,
-        }
+    pub const fn numerator(&self) -> u64 {
+        self.0.Num as u64
+    }
+
+    pub const fn denominator(&self) -> u64 {
+        self.0.Den as u64
     }
 }
 
@@ -119,7 +117,7 @@ impl Track {
     pub fn TimeBase(&self) -> TrackTimebase {
         let res_track = unsafe { ffms2_sys::FFMS_GetTimeBase(self.track) };
         let ref_track = unsafe { &*res_track };
-        TrackTimebase::new(*ref_track)
+        TrackTimebase(*ref_track)
     }
 
     pub fn TrackType(&self) -> TrackType {

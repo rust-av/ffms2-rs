@@ -36,12 +36,21 @@ simple_enum!(
 
 simple_enum!(Stereo3DFlags, (S3D_FLAGS_INVERT));
 
-create_enum!(
-    ColorRanges,
-    FFMS_ColorRanges,
-    color_ranges,
-    (CR_UNSPECIFIED, CR_MPEG, CR_JPEG)
-);
+pub enum ColorRange {
+    Unspecified,
+    Mpeg,
+    Jpeg,
+}
+
+impl ColorRange {
+    pub(crate) const fn ffms2_color_ranges(self) -> FFMS_ColorRanges {
+        match self {
+            Self::Unspecified => FFMS_ColorRanges::FFMS_CR_UNSPECIFIED,
+            Self::Mpeg => FFMS_ColorRanges::FFMS_CR_MPEG,
+            Self::Jpeg => FFMS_ColorRanges::FFMS_CR_JPEG,
+        }
+    }
+}
 
 pub struct VideoProperties(FFMS_VideoProperties);
 
@@ -221,16 +230,15 @@ impl VideoSource {
     pub fn SetInputFormatV(
         &self,
         ColorSpace: usize,
-        ColorRange: ColorRanges,
+        ColorRange: ColorRange,
         PixelFormat: usize,
     ) -> Result<()> {
         let mut error = InternalError::new();
-        let colorange = ColorRanges::to_color_ranges(ColorRange) as i32;
         let err = unsafe {
             ffms2_sys::FFMS_SetInputFormatV(
                 self.video_source,
                 ColorSpace as i32,
-                colorange,
+                ColorRange::ffms2_color_ranges(ColorRange) as i32,
                 PixelFormat as i32,
                 error.as_mut_ptr(),
             )
