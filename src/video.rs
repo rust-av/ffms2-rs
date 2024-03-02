@@ -20,22 +20,24 @@ create_enum!(
     )
 );
 
-simple_enum!(
-    Stereo3DType,
-    (
-        S3D_TYPE_2D,
-        S3D_TYPE_SIDEBYSIDE,
-        S3D_TYPE_TOPBOTTOM,
-        S3D_TYPE_FRAMESEQUENCE,
-        S3D_TYPE_CHECKERBOARD,
-        S3D_TYPE_SIDEBYSIDE_QUINCUNX,
-        S3D_TYPE_LINES,
-        S3D_TYPE_COLUMNS,
-    )
-);
+#[derive(Clone, Copy, Debug)]
+pub enum Stereo3DType {
+    TwoDimensional,
+    SideBySide,
+    TopBottom,
+    FrameSequence,
+    CheckerBoard,
+    SideBySideQuincunx,
+    Lines,
+    Columns,
+}
 
-simple_enum!(Stereo3DFlags, (S3D_FLAGS_INVERT));
+#[derive(Clone, Copy, Debug)]
+pub enum Stereo3DFlags {
+    FlagsInvert,
+}
 
+#[derive(Clone, Copy, Debug)]
 pub enum ColorRange {
     Unspecified,
     Mpeg,
@@ -52,6 +54,7 @@ impl ColorRange {
     }
 }
 
+#[derive(Debug)]
 pub struct VideoProperties(FFMS_VideoProperties);
 
 impl VideoProperties {

@@ -11,6 +11,7 @@ use crate::frame::FrameInfo;
 use crate::index::Index;
 use crate::video::VideoSource;
 
+#[derive(Clone, Copy, Debug)]
 pub enum TrackType {
     Unknown,
     Video,
