@@ -10,49 +10,47 @@ use crate::error::{InternalError, Result};
 use crate::index::Index;
 use crate::resample::ResampleOptions;
 
-simple_enum!(
-    AudioChannel,
-    (
-        CH_FRONT_LEFT,
-        CH_FRONT_RIGHT,
-        CH_FRONT_CENTER,
-        CH_LOW_FREQUENCY,
-        CH_BACK_LEFT,
-        CH_BACK_RIGHT,
-        CH_FRONT_LEFT_OF_CENTER,
-        CH_FRONT_RIGHT_OF_CENTER,
-        CH_BACK_CENTER,
-        CH_SIDE_LEFT,
-        CH_SIDE_RIGHT,
-        CH_TOP_CENTER,
-        CH_TOP_FRONT_LEFT,
-        CH_TOP_FRONT_CENTER,
-        CH_TOP_FRONT_RIGHT,
-        CH_TOP_BACK_LEFT,
-        CH_TOP_BACK_CENTER,
-        CH_TOP_BACK_RIGHT,
-        CH_STEREO_LEFT,
-        CH_STEREO_RIGHT,
-    )
-);
+#[derive(Clone, Copy, Debug)]
+pub enum AudioChannel {
+    FrontLeft,
+    FrontRight,
+    FrontCenter,
+    LowFrequency,
+    BackLeft,
+    BackRight,
+    FrontLeftOfCenter,
+    FrontRightOfCenter,
+    BackCenter,
+    SideLeft,
+    SideRight,
+    TopCenter,
+    TopFrontLeft,
+    TopFrontCenter,
+    TopFrontRight,
+    TopBackLeft,
+    TopBackCenter,
+    TopBackRight,
+    StereoLeft,
+    StereoRight,
+}
 
-simple_enum!(
-    AudioDelay,
-    (DELAY_NO_SHIFT, DELAY_TIME_ZERO, DELAY_FIRST_VIDEO_TRACK)
-);
+#[derive(Clone, Copy, Debug)]
+pub enum AudioDelay {
+    NoShift,
+    TimeZero,
+    FirstVideoTrack,
+}
 
-simple_enum!(
-    MatrixEncoding,
-    (
-        MATRIX_ENCODING_NONE,
-        MATRIX_ENCODING_DOBLY,
-        MATRIX_ENCODING_PRO_LOGIC_II,
-        MATRIX_ENCODING_PRO_LOGIC_IIX,
-        MATRIX_ENCODING_PRO_LOGIC_IIZ,
-        MATRIX_ENCODING_DOLBY_EX,
-        MATRIX_ENCODING_DOLBY_HEADPHONE,
-    )
-);
+#[derive(Clone, Copy, Debug)]
+pub enum MatrixEncoding {
+    None,
+    Dolby,
+    ProLogicII,
+    ProLogicIIX,
+    ProLogicIIZ,
+    DolbyEx,
+    DolbyHeadphone,
+}
 
 #[derive(Debug)]
 pub struct AudioProperties(FFMS_AudioProperties);
