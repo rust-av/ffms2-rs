@@ -6,8 +6,26 @@ use std::ffi::CString;
 use std::os::raw::c_void;
 use std::path::Path;
 
-use crate::error::{IndexErrorHandling, InternalError, Result};
+use ffms2_sys::FFMS_IndexErrorHandling;
+
+use crate::error::{InternalError, Result};
 use crate::track::TrackType;
+
+create_enum!(
+    IndexErrorHandling,
+    FFMS_IndexErrorHandling,
+    idx_errors,
+    (IEH_ABORT, IEH_CLEAR_TRACK, IEH_STOP_TRACK, IEH_IGNORE)
+);
+
+display!(IndexErrorHandling,
+         (
+           IEH_ABORT: "Index error aborting.",
+           IEH_CLEAR_TRACK: "Index error clear track.",
+           IEH_STOP_TRACK: "Index error stop track.",
+           IEH_IGNORE: "Index error ignore.",
+         )
+);
 
 pub struct Index {
     index: *mut ffms2_sys::FFMS_Index,
@@ -35,8 +53,6 @@ impl Index {
     }
 
     pub fn ErrorHandling(&self) -> IndexErrorHandling {
-        use ffms2_sys::FFMS_IndexErrorHandling;
-
         let index_error_handling =
             unsafe { ffms2_sys::FFMS_GetErrorHandling(self.index) };
         match index_error_handling {

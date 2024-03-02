@@ -4,7 +4,7 @@ use std::str;
 
 use thiserror::Error;
 
-use ffms2_sys::{FFMS_ErrorInfo, FFMS_Errors, FFMS_IndexErrorHandling};
+use ffms2_sys::{FFMS_ErrorInfo, FFMS_Errors};
 
 errors!(Errors, FFMS_Errors,
         (
@@ -33,22 +33,6 @@ errors!(Errors, FFMS_Errors,
             ERROR_FILE_MISMATCH: "File mismatch.",
             ERROR_USER: "Error caused by the user.",
         )
-);
-
-create_enum!(
-    IndexErrorHandling,
-    FFMS_IndexErrorHandling,
-    idx_errors,
-    (IEH_ABORT, IEH_CLEAR_TRACK, IEH_STOP_TRACK, IEH_IGNORE)
-);
-
-display!(IndexErrorHandling,
-         (
-           IEH_ABORT: "Index error aborting.",
-           IEH_CLEAR_TRACK: "Index error clear track.",
-           IEH_STOP_TRACK: "Index error stop track.",
-           IEH_IGNORE: "Index error ignore.",
-         )
 );
 
 pub(crate) struct InternalError {
