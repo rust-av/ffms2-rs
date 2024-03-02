@@ -7,18 +7,26 @@ use crate::error::{InternalError, Result};
 use crate::frame::Resizers;
 use crate::index::Index;
 
-create_enum!(
-    SeekMode,
-    FFMS_SeekMode,
-    seek_mode,
-    (
-        SEEK_LINEAR_NO_RW,
-        SEEK_LINEAR,
-        SEEK_NORMAL,
-        SEEK_UNSAFE,
-        SEEK_AGGRESSIVE,
-    )
-);
+#[derive(Clone, Copy, Debug)]
+pub enum SeekMode {
+    LinearNoRW,
+    Linear,
+    Normal,
+    Unsafe,
+    Aggressive,
+}
+
+impl SeekMode {
+    pub(crate) const fn ffms2_seek_mode(self) -> FFMS_SeekMode {
+        match self {
+            Self::LinearNoRW => FFMS_SeekMode::FFMS_SEEK_LINEAR_NO_RW,
+            Self::Linear => FFMS_SeekMode::FFMS_SEEK_LINEAR,
+            Self::Normal => FFMS_SeekMode::FFMS_SEEK_NORMAL,
+            Self::Unsafe => FFMS_SeekMode::FFMS_SEEK_UNSAFE,
+            Self::Aggressive => FFMS_SeekMode::FFMS_SEEK_AGGRESSIVE,
+        }
+    }
+}
 
 #[derive(Clone, Copy, Debug)]
 pub enum Stereo3DType {
@@ -203,14 +211,13 @@ impl VideoSource {
     ) -> Result<Self> {
         let source = CString::new(SourceFile.to_str().unwrap()).unwrap();
         let mut error = InternalError::new();
-        let seek = SeekMode::to_seek_mode(SeekMode) as i32;
         let video_source = unsafe {
             ffms2_sys::FFMS_CreateVideoSource(
                 source.as_ptr(),
                 Track as i32,
                 Index.as_mut_ptr(),
                 Threads as i32,
-                seek,
+                SeekMode::ffms2_seek_mode(SeekMode) as i32,
                 error.as_mut_ptr(),
             )
         };
