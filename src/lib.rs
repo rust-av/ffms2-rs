@@ -1,6 +1,3 @@
-#[macro_use]
-mod utility;
-
 pub mod audio;
 pub mod error;
 pub mod frame;

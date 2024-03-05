@@ -4,7 +4,7 @@ use std::ffi::c_void;
 use std::ffi::CString;
 use std::path::Path;
 
-use ffms2_sys::FFMS_AudioProperties;
+use ffms2_sys::{FFMS_AudioProperties, FFMS_MatrixEncoding};
 
 use crate::error::{InternalError, Result};
 use crate::index::Index;
@@ -50,6 +50,30 @@ pub enum MatrixEncoding {
     ProLogicIIZ,
     DolbyEx,
     DolbyHeadphone,
+}
+
+impl MatrixEncoding {
+    pub(crate) const fn new(matrix_encoding: FFMS_MatrixEncoding) -> Self {
+        match matrix_encoding {
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_NONE => Self::None,
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOBLY => Self::Dolby,
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_II => {
+                Self::ProLogicII
+            }
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_IIX => {
+                Self::ProLogicIIX
+            }
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_IIZ => {
+                Self::ProLogicIIZ
+            }
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOLBY_EX => {
+                Self::DolbyEx
+            }
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOLBY_HEADPHONE => {
+                Self::DolbyHeadphone
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
