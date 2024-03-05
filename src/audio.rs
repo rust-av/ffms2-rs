@@ -5,7 +5,8 @@ use std::ffi::CString;
 use std::path::Path;
 
 use ffms2_sys::{
-    FFMS_AudioDelayModes, FFMS_AudioProperties, FFMS_MatrixEncoding,
+    FFMS_AudioDelayModes, FFMS_AudioGapFillModes, FFMS_AudioProperties,
+    FFMS_MatrixEncoding,
 };
 
 use crate::error::{InternalError, Result};
@@ -67,6 +68,23 @@ impl AudioChannel {
             e if e == FFMS_CH_STEREO_LEFT as i64 => Self::StereoLeft,
             e if e == FFMS_CH_STEREO_RIGHT as i64 => Self::StereoRight,
             _ => Self::Unknown,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum AudioGapFillModes {
+    Auto,
+    Disabled,
+    Enabled,
+}
+
+impl AudioGapFillModes {
+    const fn ffms2_audio_gap_fill_modes(self) -> FFMS_AudioGapFillModes {
+        match self {
+            Self::Auto => FFMS_AudioGapFillModes::FFMS_GAP_FILL_AUTO,
+            Self::Disabled => FFMS_AudioGapFillModes::FFMS_GAP_FILL_DISABLED,
+            Self::Enabled => FFMS_AudioGapFillModes::FFMS_GAP_FILL_ENABLED,
         }
     }
 }
@@ -178,6 +196,35 @@ impl AudioSource {
                 track as i32,
                 index.as_mut_ptr(),
                 delay_mode.ffms2_audio_delay() as i32,
+                error.as_mut_ptr(),
+            )
+        };
+
+        if audio_source.is_null() {
+            Err(error.into())
+        } else {
+            Ok(AudioSource { audio_source })
+        }
+    }
+
+    pub fn audio_source_2(
+        source_file: &Path,
+        track: usize,
+        index: &Index,
+        delay_mode: AudioDelay,
+        fill_gaps: AudioGapFillModes,
+        drc_scale: f64,
+    ) -> Result<Self> {
+        let source = CString::new(source_file.to_str().unwrap()).unwrap();
+        let mut error = InternalError::new();
+        let audio_source = unsafe {
+            ffms2_sys::FFMS_CreateAudioSource2(
+                source.as_ptr(),
+                track as i32,
+                index.as_mut_ptr(),
+                delay_mode.ffms2_audio_delay() as i32,
+                fill_gaps.ffms2_audio_gap_fill_modes() as i32,
+                drc_scale,
                 error.as_mut_ptr(),
             )
         };
