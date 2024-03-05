@@ -101,19 +101,19 @@ unsafe impl Send for AudioSource {}
 
 impl AudioSource {
     pub fn new(
-        SourceFile: &Path,
-        Track: usize,
-        Index: &Index,
-        DelayMode: isize,
+        source_file: &Path,
+        track: usize,
+        index: &Index,
+        delay_mode: isize,
     ) -> Result<Self> {
-        let source = CString::new(SourceFile.to_str().unwrap()).unwrap();
+        let source = CString::new(source_file.to_str().unwrap()).unwrap();
         let mut error = InternalError::new();
         let audio_source = unsafe {
             ffms2_sys::FFMS_CreateAudioSource(
                 source.as_ptr(),
-                Track as i32,
-                Index.as_mut_ptr(),
-                DelayMode as i32,
+                track as i32,
+                index.as_mut_ptr(),
+                delay_mode as i32,
                 error.as_mut_ptr(),
             )
         };
@@ -125,7 +125,7 @@ impl AudioSource {
         }
     }
 
-    pub fn GetAudioProperties(&self) -> AudioProperties {
+    pub fn audio_properties(&self) -> AudioProperties {
         let audio_prop =
             unsafe { ffms2_sys::FFMS_GetAudioProperties(self.audio_source) };
         let ref_audio = unsafe { &*audio_prop };
@@ -133,29 +133,34 @@ impl AudioSource {
         AudioProperties(*ref_audio)
     }
 
-    pub fn GetAudio<T>(&self, Start: usize, Count: usize) -> Result<Vec<T>> {
+    pub fn audio<T>(
+        &self,
+        sample_start: usize,
+        samples_count: usize,
+    ) -> Result<Vec<T>> {
         let mut error = InternalError::new();
-        let audio_prop = self.GetAudioProperties();
+        let audio_prop = self.audio_properties();
         let num_samples = audio_prop.0.NumSamples;
 
-        if Start as i64 > (num_samples - 1) || Count as i64 > (num_samples - 1)
+        if sample_start as i64 > (num_samples - 1)
+            || samples_count as i64 > (num_samples - 1)
         {
             panic!("Requesting samples beyond the stream end");
         }
 
         let num_channels = audio_prop.0.Channels;
-        let num_elements = Count * num_channels as usize;
+        let num_elements = samples_count * num_channels as usize;
 
-        let Buf: Vec<T> = Vec::with_capacity(num_elements);
-        let mut Buf = mem::ManuallyDrop::new(Buf);
-        let buf_ptr = Buf.as_mut_ptr();
+        let buf: Vec<T> = Vec::with_capacity(num_elements);
+        let mut buf = mem::ManuallyDrop::new(buf);
+        let buf_ptr = buf.as_mut_ptr();
 
         let err = unsafe {
             ffms2_sys::FFMS_GetAudio(
                 self.audio_source,
                 buf_ptr as *mut c_void,
-                Start as i64,
-                Count as i64,
+                sample_start as i64,
+                samples_count as i64,
                 error.as_mut_ptr(),
             )
         };
@@ -171,7 +176,7 @@ impl AudioSource {
         }
     }
 
-    pub fn CreateResampleOptions(&self) -> ResampleOptions {
+    pub fn create_resample_options(&self) -> ResampleOptions {
         let res_opt = unsafe {
             ffms2_sys::FFMS_CreateResampleOptions(self.audio_source)
         };
@@ -180,7 +185,7 @@ impl AudioSource {
         ResampleOptions::create_struct(ref_res)
     }
 
-    pub fn SetOutputFormatA(&self, options: &ResampleOptions) -> Result<()> {
+    pub fn set_output_format(&self, options: &ResampleOptions) -> Result<()> {
         let mut error = InternalError::new();
         let err = unsafe {
             ffms2_sys::FFMS_SetOutputFormatA(

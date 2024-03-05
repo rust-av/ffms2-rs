@@ -203,21 +203,21 @@ unsafe impl Send for VideoSource {}
 
 impl VideoSource {
     pub fn new(
-        SourceFile: &Path,
-        Track: usize,
-        Index: &Index,
-        Threads: usize,
-        SeekMode: SeekMode,
+        source_file: &Path,
+        track: usize,
+        index: &Index,
+        threads: usize,
+        seek_mode: SeekMode,
     ) -> Result<Self> {
-        let source = CString::new(SourceFile.to_str().unwrap()).unwrap();
+        let source = CString::new(source_file.to_str().unwrap()).unwrap();
         let mut error = InternalError::new();
         let video_source = unsafe {
             ffms2_sys::FFMS_CreateVideoSource(
                 source.as_ptr(),
-                Track as i32,
-                Index.as_mut_ptr(),
-                Threads as i32,
-                SeekMode::ffms2_seek_mode(SeekMode) as i32,
+                track as i32,
+                index.as_mut_ptr(),
+                threads as i32,
+                SeekMode::ffms2_seek_mode(seek_mode) as i32,
                 error.as_mut_ptr(),
             )
         };
@@ -229,7 +229,7 @@ impl VideoSource {
         }
     }
 
-    pub fn GetVideoProperties(&self) -> VideoProperties {
+    pub fn video_properties(&self) -> VideoProperties {
         let video_prop =
             unsafe { ffms2_sys::FFMS_GetVideoProperties(self.video_source) };
         let ref_video = unsafe { &*video_prop };
@@ -237,19 +237,19 @@ impl VideoSource {
         VideoProperties(*ref_video)
     }
 
-    pub fn SetInputFormatV(
+    pub fn set_input_format(
         &self,
-        ColorSpace: usize,
-        ColorRange: ColorRange,
-        PixelFormat: usize,
+        color_space: usize,
+        color_range: ColorRange,
+        pixel_format: usize,
     ) -> Result<()> {
         let mut error = InternalError::new();
         let err = unsafe {
             ffms2_sys::FFMS_SetInputFormatV(
                 self.video_source,
-                ColorSpace as i32,
-                ColorRange::ffms2_color_ranges(ColorRange) as i32,
-                PixelFormat as i32,
+                color_space as i32,
+                ColorRange::ffms2_color_ranges(color_range) as i32,
+                pixel_format as i32,
                 error.as_mut_ptr(),
             )
         };
@@ -261,32 +261,32 @@ impl VideoSource {
         }
     }
 
-    pub fn ResetInputFormatV(&self) {
+    pub fn reset_input_format(&self) {
         unsafe {
             ffms2_sys::FFMS_ResetInputFormatV(self.video_source);
         }
     }
 
-    pub fn SetOutputFormatV2(
+    pub fn set_output_format_v2(
         &self,
-        TargetFormats: &mut Vec<i32>,
-        Width: usize,
-        Height: usize,
-        Resizer: Resizers,
+        target_formats: &mut Vec<i32>,
+        width: usize,
+        height: usize,
+        resizer: Resizers,
     ) -> Result<()> {
         let mut error = InternalError::new();
-        TargetFormats.push(-1);
+        target_formats.push(-1);
         let err = unsafe {
             ffms2_sys::FFMS_SetOutputFormatV2(
                 self.video_source,
-                TargetFormats.as_ptr(),
-                Width as i32,
-                Height as i32,
-                Resizers::ffms2_resizer(Resizer) as i32,
+                target_formats.as_ptr(),
+                width as i32,
+                height as i32,
+                Resizers::ffms2_resizer(resizer) as i32,
                 error.as_mut_ptr(),
             )
         };
-        TargetFormats.pop();
+        target_formats.pop();
 
         if err != 0 {
             Err(error.into())
@@ -295,7 +295,7 @@ impl VideoSource {
         }
     }
 
-    pub fn ResetOutputFormatV(&self) {
+    pub fn reset_output_format(&self) {
         unsafe {
             ffms2_sys::FFMS_ResetOutputFormatV(self.video_source);
         }

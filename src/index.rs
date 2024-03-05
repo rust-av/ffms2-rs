@@ -1,3 +1,4 @@
+use std::fmt;
 use std::mem;
 use std::panic;
 use std::process;
@@ -11,21 +12,45 @@ use ffms2_sys::FFMS_IndexErrorHandling;
 use crate::error::{InternalError, Result};
 use crate::track::TrackType;
 
-create_enum!(
-    IndexErrorHandling,
-    FFMS_IndexErrorHandling,
-    idx_errors,
-    (IEH_ABORT, IEH_CLEAR_TRACK, IEH_STOP_TRACK, IEH_IGNORE)
-);
+#[derive(Clone, Copy, Debug)]
+pub enum IndexErrorHandling {
+    Abort,
+    ClearTrack,
+    StopTrack,
+    Ignore,
+}
 
-display!(IndexErrorHandling,
-         (
-           IEH_ABORT: "Index error aborting.",
-           IEH_CLEAR_TRACK: "Index error clear track.",
-           IEH_STOP_TRACK: "Index error stop track.",
-           IEH_IGNORE: "Index error ignore.",
-         )
-);
+impl IndexErrorHandling {
+    const fn ffms2_index_error_handling(self) -> FFMS_IndexErrorHandling {
+        match self {
+            Self::Abort => FFMS_IndexErrorHandling::FFMS_IEH_ABORT,
+            Self::ClearTrack => FFMS_IndexErrorHandling::FFMS_IEH_CLEAR_TRACK,
+            Self::StopTrack => FFMS_IndexErrorHandling::FFMS_IEH_STOP_TRACK,
+            Self::Ignore => FFMS_IndexErrorHandling::FFMS_IEH_IGNORE,
+        }
+    }
+
+    const fn new(index_error_handling: FFMS_IndexErrorHandling) -> Self {
+        match index_error_handling {
+            FFMS_IndexErrorHandling::FFMS_IEH_ABORT => Self::Abort,
+            FFMS_IndexErrorHandling::FFMS_IEH_CLEAR_TRACK => Self::ClearTrack,
+            FFMS_IndexErrorHandling::FFMS_IEH_STOP_TRACK => Self::StopTrack,
+            FFMS_IndexErrorHandling::FFMS_IEH_IGNORE => Self::Ignore,
+        }
+    }
+}
+
+impl fmt::Display for IndexErrorHandling {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = match self {
+            Self::Abort => "Index error aborting.",
+            Self::ClearTrack => "Index error clear track.",
+            Self::StopTrack => "Index error stop track.",
+            Self::Ignore => "Index error ignore.",
+        };
+        s.fmt(f)
+    }
+}
 
 pub struct Index {
     index: *mut ffms2_sys::FFMS_Index,
@@ -35,8 +60,8 @@ pub struct Index {
 unsafe impl Send for Index {}
 
 impl Index {
-    pub fn new(IndexFile: &Path) -> Result<Self> {
-        let source = CString::new(IndexFile.to_str().unwrap()).unwrap();
+    pub fn new(index_file: &Path) -> Result<Self> {
+        let source = CString::new(index_file.to_str().unwrap()).unwrap();
         let mut error = InternalError::new();
         let index = unsafe {
             ffms2_sys::FFMS_ReadIndex(source.as_ptr(), error.as_mut_ptr())
@@ -52,23 +77,10 @@ impl Index {
         }
     }
 
-    pub fn ErrorHandling(&self) -> IndexErrorHandling {
+    pub fn error_handling(&self) -> IndexErrorHandling {
         let index_error_handling =
             unsafe { ffms2_sys::FFMS_GetErrorHandling(self.index) };
-        match index_error_handling {
-            FFMS_IndexErrorHandling::FFMS_IEH_ABORT => {
-                IndexErrorHandling::IEH_ABORT
-            }
-            FFMS_IndexErrorHandling::FFMS_IEH_CLEAR_TRACK => {
-                IndexErrorHandling::IEH_CLEAR_TRACK
-            }
-            FFMS_IndexErrorHandling::FFMS_IEH_STOP_TRACK => {
-                IndexErrorHandling::IEH_STOP_TRACK
-            }
-            FFMS_IndexErrorHandling::FFMS_IEH_IGNORE => {
-                IndexErrorHandling::IEH_IGNORE
-            }
-        }
+        IndexErrorHandling::new(index_error_handling)
     }
 
     pub fn ReadIndexFromBuffer(Buffer: &[u8]) -> Result<Self> {
@@ -259,11 +271,11 @@ impl Indexer {
         ErrorHandling: IndexErrorHandling,
     ) -> Result<Index> {
         let mut error = InternalError::new();
-        let handling = IndexErrorHandling::to_idx_errors(ErrorHandling) as i32;
         let index = unsafe {
             ffms2_sys::FFMS_DoIndexing2(
                 self.indexer,
-                handling,
+                IndexErrorHandling::ffms2_index_error_handling(ErrorHandling)
+                    as i32,
                 error.as_mut_ptr(),
             )
         };
