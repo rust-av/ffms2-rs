@@ -4,7 +4,9 @@ use std::ffi::c_void;
 use std::ffi::CString;
 use std::path::Path;
 
-use ffms2_sys::{FFMS_AudioProperties, FFMS_MatrixEncoding};
+use ffms2_sys::{
+    FFMS_AudioDelayModes, FFMS_AudioProperties, FFMS_MatrixEncoding,
+};
 
 use crate::error::{InternalError, Result};
 use crate::index::Index;
@@ -39,6 +41,18 @@ pub enum AudioDelay {
     NoShift,
     TimeZero,
     FirstVideoTrack,
+}
+
+impl AudioDelay {
+    const fn ffms2_audio_delay(self) -> FFMS_AudioDelayModes {
+        match self {
+            Self::NoShift => FFMS_AudioDelayModes::FFMS_DELAY_NO_SHIFT,
+            Self::TimeZero => FFMS_AudioDelayModes::FFMS_DELAY_TIME_ZERO,
+            Self::FirstVideoTrack => {
+                FFMS_AudioDelayModes::FFMS_DELAY_FIRST_VIDEO_TRACK
+            }
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -96,8 +110,8 @@ impl AudioProperties {
         self.0.Channels as usize
     }
 
-    pub const fn channel_layout(&self) -> usize {
-        self.0.ChannelLayout as usize
+    pub const fn channel_layout(&self) -> AudioChannel {
+        self.0.ChannelLayout
     }
 
     pub const fn samples_count(&self) -> usize {
@@ -128,7 +142,7 @@ impl AudioSource {
         source_file: &Path,
         track: usize,
         index: &Index,
-        delay_mode: isize,
+        delay_mode: AudioDelay,
     ) -> Result<Self> {
         let source = CString::new(source_file.to_str().unwrap()).unwrap();
         let mut error = InternalError::new();
@@ -137,7 +151,7 @@ impl AudioSource {
                 source.as_ptr(),
                 track as i32,
                 index.as_mut_ptr(),
-                delay_mode as i32,
+                delay_mode.ffms2_audio_delay() as i32,
                 error.as_mut_ptr(),
             )
         };

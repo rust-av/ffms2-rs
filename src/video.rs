@@ -45,6 +45,12 @@ pub enum Stereo3DFlags {
     FlagsInvert,
 }
 
+impl Stereo3DFlags {
+    const fn new(_stereo_3d_flags: i32) -> Self {
+        Self::FlagsInvert
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum ColorRange {
     Unspecified,
@@ -60,6 +66,13 @@ impl ColorRange {
             Self::Jpeg => FFMS_ColorRanges::FFMS_CR_JPEG,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Flip {
+    Unknown,
+    Vertical,
+    Horizontal,
 }
 
 #[derive(Debug)]
@@ -114,11 +127,11 @@ impl VideoProperties {
         self.0.TopFieldFirst
     }
 
-    pub const fn colorspace(&self) -> i32 {
-        self.0.ColorSpace
+    pub const fn colorspace(&self) -> usize {
+        self.0.ColorSpace as usize
     }
 
-    pub const fn color_range(&self) -> i32 {
+    pub const fn color_range(&self) -> ColorRange {
         self.0.ColorRange
     }
 
@@ -134,12 +147,12 @@ impl VideoProperties {
         self.0.Rotation
     }
 
-    pub const fn stereo3d_type(&self) -> i32 {
+    pub const fn stereo3d_type(&self) -> Stereo3DType {
         self.0.Stereo3DType
     }
 
-    pub const fn stereo3d_flags(&self) -> i32 {
-        self.0.Stereo3DFlags
+    pub const fn stereo3d_flags(&self) -> Stereo3DFlags {
+        Stereo3DFlags::new(self.0.Stereo3DFlags)
     }
 
     pub const fn last_end_time(&self) -> f64 {
@@ -190,8 +203,14 @@ impl VideoProperties {
         self.0.ContentLightLevelAverage
     }
 
-    pub const fn flip(&self) -> i32 {
-        self.0.Flip
+    pub const fn flip(&self) -> Flip {
+        if self.0.Flip == -1 {
+            Flip::Vertical
+        } else if self.0.Flip == 1 {
+            Flip::Horizontal
+        } else {
+            Flip::Unknown
+        }
     }
 }
 
