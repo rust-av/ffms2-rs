@@ -1,67 +1,83 @@
 name: ffms2
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [opened, synchronize]
 
 jobs:
-  format-and-tests:
-
-    strategy:
-      matrix:
-        conf:
-         - clippy-rustfmt
-         - ffms2-tests
-        include:
-         - conf: clippy-rustfmt
-           components: clippy, rustfmt
+  clippy-format:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
-    - name: Install ffmpeg
-      env:
-        FFMPEG_PKG: libavcodec-dev libavformat-dev libavdevice-dev zlib1g-dev
+    - name: Install FFmpeg
       run: |
-        sudo apt-get update
-        sudo apt-get install -y $FFMPEG_PKG
+        sudo apt update
+        sudo apt install libavcodec-dev libavformat-dev libavdevice-dev zlib1g-dev
 
     - name: Install ffms2
       run: |
-        git clone --depth 1 https://github.com/FFMS/ffms2.git
+        git clone --depth 1 https://github.com/ffms/ffms2.git
         cd ffms2
-        ./autogen.sh --prefix=$HOME/ffms2-dir
-        make install
+        ./autogen.sh --prefix=$home/ffms2-dir --enable-static --disable-shared
+        sudo make install
 
-    - name: Install stable
-      uses: actions-rs/toolchain@v1
+    - name: Install Rust stable
+      uses: dtolnay/rust-toolchain@stable
       with:
-        profile: minimal
-        toolchain: stable
-        override: true
-        components: ${{ matrix.clippy-rustfmt }}
+        components: clippy, rustfmt
+
+    - name: run rustfmt
+      run:
+        cargo fmt --all -- --check --verbose
+
+    - name: Run cargo clippy
+      uses: giraffate/clippy-action@v1
+      with:
+        github_token: ${{ secrets.github_token }}
+        clippy_flags: --all-targets -- -d warnings
+        reporter: github-pr-check
 
     - name: Set pkg-config variable
-      env:
-        FFMS2_PKG_CONFIG: ffms2-dir/lib/pkgconfig
       run: |
-        echo "PKG_CONFIG_PATH=$HOME/$FFMS2_PKG_CONFIG" >> $GITHUB_ENV
-
-    - name: Run rustfmt
-      if: matrix.conf == 'clippy-rustfmt'
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: -- --check
-
-    - name: Run clippy
-      if: matrix.conf == 'clippy-rustfmt'
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: --all-targets --all-features -- -D warnings
+        echo "PKG_CONFIG_PATH=$HOME/ffms2-dir/lib/pkgconfig" >> $GITHUB_ENV
 
     - name: Run tests
       if: matrix.conf == 'ffms2-tests'
+      run: |
+        cargo test --all-features
+
+  tests:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install FFmpeg
+      run: |
+        sudo apt update
+        sudo apt install libavcodec-dev libavformat-dev libavdevice-dev zlib1g-dev
+
+    - name: Install ffms2
+      run: |
+        git clone --depth 1 https://github.com/ffms/ffms2.git
+        cd ffms2
+        ./autogen.sh --prefix=$home/ffms2-dir --enable-static --disable-shared
+        sudo make install
+
+    - name: Install Rust Stable
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Set pkg-config variable
+      run: |
+        echo "PKG_CONFIG_PATH=$HOME/ffms2-dir/lib/pkgconfig" >> $GITHUB_ENV
+
+    - name: Run tests
       run: |
         cargo test --all-features
