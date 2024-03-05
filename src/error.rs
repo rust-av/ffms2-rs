@@ -6,34 +6,46 @@ use thiserror::Error;
 
 use ffms2_sys::{FFMS_ErrorInfo, FFMS_Errors};
 
-errors!(Errors, FFMS_Errors,
-        (
-            ERROR_SUCCESS: "Success.",
-            ERROR_INDEX: "Error Index.",
-            ERROR_INDEXING: "Error Indexing.",
-            ERROR_POSTPROCESSING: "Error Postprocessing.",
-            ERROR_SCALING: "Error Scaling.",
-            ERROR_DECODING: "Erorr Decoding.",
-            ERROR_SEEKING: "Error Seeking.",
-            ERROR_PARSER: "Error Parser.",
-            ERROR_TRACK: "Error in the track.",
-            ERROR_WAVE_WRITER: "Error with the wave writer.",
-            ERROR_CANCELLED: "Error cancelled.",
-            ERROR_RESAMPLING: "Error resampling.",
-            ERROR_UNKNOWN: "Error unknown.",
-            ERROR_UNSUPPORTED: "Error unsupported.",
-            ERROR_FILE_READ: "Error file read.",
-            ERROR_FILE_WRITE: "Error file write.",
-            ERROR_NO_FILE: "No file.",
-            ERROR_VERSION: "Version error.",
-            ERROR_ALLOCATION_FAILED: "Allocation failed.",
-            ERROR_INVALID_ARGUMENT: "Invalid argument.",
-            ERROR_CODEC: "Error with the codec.",
-            ERROR_NOT_AVAILABLE: "Not available.",
-            ERROR_FILE_MISMATCH: "File mismatch.",
-            ERROR_USER: "Error caused by the user.",
-        )
-);
+const fn ffms2_error_to_str(error: i32) -> &'static str {
+    match error {
+        e if e == FFMS_Errors::FFMS_ERROR_SUCCESS as i32 => "Success.",
+        e if e == FFMS_Errors::FFMS_ERROR_INDEX as i32 => "Index.",
+        e if e == FFMS_Errors::FFMS_ERROR_INDEXING as i32 => "Indexing.",
+        e if e == FFMS_Errors::FFMS_ERROR_POSTPROCESSING as i32 => {
+            "Post-processing."
+        }
+        e if e == FFMS_Errors::FFMS_ERROR_SCALING as i32 => "Scaling.",
+        e if e == FFMS_Errors::FFMS_ERROR_DECODING as i32 => "Decoding.",
+        e if e == FFMS_Errors::FFMS_ERROR_SEEKING as i32 => "Seeking.",
+        e if e == FFMS_Errors::FFMS_ERROR_PARSER as i32 => "Parser.",
+        e if e == FFMS_Errors::FFMS_ERROR_TRACK as i32 => "Track.",
+        e if e == FFMS_Errors::FFMS_ERROR_WAVE_WRITER as i32 => "Wave writer.",
+        e if e == FFMS_Errors::FFMS_ERROR_CANCELLED as i32 => "Cancelled.",
+        e if e == FFMS_Errors::FFMS_ERROR_RESAMPLING as i32 => "Resampling.",
+        e if e == FFMS_Errors::FFMS_ERROR_UNKNOWN as i32 => "Unknown.",
+        e if e == FFMS_Errors::FFMS_ERROR_UNSUPPORTED as i32 => "Unsupported.",
+        e if e == FFMS_Errors::FFMS_ERROR_FILE_READ as i32 => "File read.",
+        e if e == FFMS_Errors::FFMS_ERROR_FILE_WRITE as i32 => "File write.",
+        e if e == FFMS_Errors::FFMS_ERROR_NO_FILE as i32 => "No file.",
+        e if e == FFMS_Errors::FFMS_ERROR_VERSION as i32 => "Version.",
+        e if e == FFMS_Errors::FFMS_ERROR_ALLOCATION_FAILED as i32 => {
+            "Allocation failed."
+        }
+        e if e == FFMS_Errors::FFMS_ERROR_INVALID_ARGUMENT as i32 => {
+            "Invalid argument."
+        }
+        e if e == FFMS_Errors::FFMS_ERROR_CODEC as i32 => "Codec error.",
+        e if e == FFMS_Errors::FFMS_ERROR_NOT_AVAILABLE as i32 => {
+            "Not available."
+        }
+        e if e == FFMS_Errors::FFMS_ERROR_FILE_MISMATCH as i32 => {
+            "File mismatch."
+        }
+        e if e == FFMS_Errors::FFMS_ERROR_USER as i32 => "Caused by the user.",
+
+        _ => "Unknown.",
+    }
+}
 
 pub(crate) struct InternalError {
     error: FFMS_ErrorInfo,
@@ -80,8 +92,8 @@ impl From<InternalError> for Error {
     fn from(internal_error: InternalError) -> Self {
         let error = format!(
             "Error: {}\nSubError: {}\n Cause: {}",
-            Errors::from_i32(internal_error.error.ErrorType),
-            Errors::from_i32(internal_error.error.SubType),
+            ffms2_error_to_str(internal_error.error.ErrorType),
+            ffms2_error_to_str(internal_error.error.SubType),
             str::from_utf8(&internal_error.buffer).unwrap_or("Unknown error")
         );
         Self::FFMS2(error)

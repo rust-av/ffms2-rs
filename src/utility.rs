@@ -62,19 +62,6 @@ macro_rules! display {
     }
 }
 
-macro_rules! errors {
-    ($enum:ident, $type:ident,
-    ($($field_name:ident: $field_err:expr),*$(,)*)) => {
-
-        simple_enum!($enum, ($($field_name,)*));
-
-        display!($enum, ($($field_name: $field_err,)*));
-
-        from_i32!($enum, $type, ($($field_name,)*));
-
-    }
-}
-
 macro_rules! set_struct {
     ($struct:ident, $param:ident, $type:ty) => {
         pub struct $struct {
