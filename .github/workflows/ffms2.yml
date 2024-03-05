@@ -2,8 +2,6 @@ name: ffms2
 
 on:
   push:
-    branches:
-      - master
   pull_request:
     types: [opened, synchronize]
 
@@ -45,7 +43,7 @@ jobs:
 
     - name: Set pkg-config variable
       run: |
-        echo "PKG_CONFIG_PATH=$HOME/ffms2-dir/lib/pkgconfig" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=$HOME/ffms2-dir/lib/pkgconfig" >> "$GITHUB_ENV"
 
     - name: Run tests
       if: matrix.conf == 'ffms2-tests'
@@ -76,7 +74,7 @@ jobs:
 
     - name: Set pkg-config variable
       run: |
-        echo "PKG_CONFIG_PATH=$HOME/ffms2-dir/lib/pkgconfig" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=$HOME/ffms2-dir/lib/pkgconfig" >> "$GITHUB_ENV"
 
     - name: Run tests
       run: |
