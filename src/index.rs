@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::mem;
 use std::panic;
@@ -226,6 +227,45 @@ impl Indexer {
         let mut error = InternalError::new();
         let indexer = unsafe {
             ffms2_sys::FFMS_CreateIndexer(source.as_ptr(), error.as_mut_ptr())
+        };
+
+        if indexer.is_null() {
+            Err(error.into())
+        } else {
+            Ok(Indexer { indexer })
+        }
+    }
+
+    pub fn create_indexer_2(
+        source_file: &Path,
+        demuxer_options: HashMap<String, String>,
+    ) -> Result<Self> {
+        let source = CString::new(source_file.to_str().unwrap()).unwrap();
+        let number_options = demuxer_options.len();
+        let demuxer_options_cstring = demuxer_options
+            .into_iter()
+            .map(|(key, value)| {
+                (CString::new(key).unwrap(), CString::new(value).unwrap())
+            })
+            .collect::<Vec<(CString, CString)>>();
+
+        let demuxer_keys_values = demuxer_options_cstring
+            .iter()
+            .map(|(key, value)| ffms2_sys::FFMS_KeyValuePair {
+                Key: key.as_ptr(),
+                Value: value.as_ptr(),
+            })
+            .collect::<Vec<ffms2_sys::FFMS_KeyValuePair>>();
+
+        let mut error = InternalError::new();
+
+        let indexer = unsafe {
+            ffms2_sys::FFMS_CreateIndexer2(
+                source.as_ptr(),
+                demuxer_keys_values.as_ptr(),
+                number_options as i32,
+                error.as_mut_ptr(),
+            )
         };
 
         if indexer.is_null() {
