@@ -18,9 +18,9 @@ jobs:
         sudo apt update
         sudo apt install libavcodec-dev libavformat-dev libavdevice-dev zlib1g-dev
 
-    - name: Install ffms2
+    - name: Install ffms2 (2.40)
       run: |
-        git clone --depth 1 https://github.com/ffms/ffms2.git
+        git clone --depth 1 --branch 2.40 https://github.com/ffms/ffms2.git
         cd ffms2
         ./autogen.sh --prefix=$home/ffms2-dir --enable-static --disable-shared
         sudo make install
@@ -62,9 +62,9 @@ jobs:
         sudo apt update
         sudo apt install libavcodec-dev libavformat-dev libavdevice-dev zlib1g-dev
 
-    - name: Install ffms2
+    - name: Install ffms2 (2.40)
       run: |
-        git clone --depth 1 https://github.com/ffms/ffms2.git
+        git clone --depth 1 --branch 2.40 https://github.com/ffms/ffms2.git
         cd ffms2
         ./autogen.sh --prefix=$home/ffms2-dir --enable-static --disable-shared
         sudo make install
