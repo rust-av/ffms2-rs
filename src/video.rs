@@ -1,7 +1,10 @@
 use std::ffi::CString;
 use std::path::Path;
 
-use ffms2_sys::{FFMS_ColorRanges, FFMS_SeekMode, FFMS_VideoProperties};
+use ffms2_sys::{
+    FFMS_ColorRanges, FFMS_SeekMode, FFMS_Stereo3DFlags, FFMS_Stereo3DType,
+    FFMS_VideoProperties,
+};
 
 use crate::error::{InternalError, Result};
 use crate::frame::Resizers;
@@ -28,8 +31,10 @@ impl SeekMode {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum Stereo3DType {
+    #[default]
+    Unknown,
     TwoDimensional,
     SideBySide,
     TopBottom,
@@ -40,19 +45,64 @@ pub enum Stereo3DType {
     Columns,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum Stereo3DFlags {
-    FlagsInvert,
-}
-
-impl Stereo3DFlags {
-    const fn new(_stereo_3d_flags: i32) -> Self {
-        Self::FlagsInvert
+impl Stereo3DType {
+    const fn new(stereo_3d_type: i32) -> Self {
+        match stereo_3d_type {
+            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_2D as i32 => {
+                Self::TwoDimensional
+            }
+            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_SIDEBYSIDE as i32 => {
+                Self::SideBySide
+            }
+            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_TOPBOTTOM as i32 => {
+                Self::TopBottom
+            }
+            e if e
+                == FFMS_Stereo3DType::FFMS_S3D_TYPE_FRAMESEQUENCE as i32 =>
+            {
+                Self::FrameSequence
+            }
+            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_CHECKERBOARD as i32 => {
+                Self::CheckerBoard
+            }
+            e if e
+                == FFMS_Stereo3DType::FFMS_S3D_TYPE_SIDEBYSIDE_QUINCUNX
+                    as i32 =>
+            {
+                Self::SideBySideQuincunx
+            }
+            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_LINES as i32 => {
+                Self::Lines
+            }
+            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_COLUMNS as i32 => {
+                Self::Columns
+            }
+            _ => Self::Unknown,
+        }
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
+pub enum Stereo3DFlags {
+    #[default]
+    Unknown,
+    Invert,
+}
+
+impl Stereo3DFlags {
+    const fn new(stereo_3d_flags: i32) -> Self {
+        match stereo_3d_flags {
+            e if e == FFMS_Stereo3DFlags::FFMS_S3D_FLAGS_INVERT as i32 => {
+                Self::Invert
+            }
+            _ => Self::Unknown,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
 pub enum ColorRange {
+    #[default]
     Unspecified,
     Mpeg,
     Jpeg,
@@ -66,10 +116,23 @@ impl ColorRange {
             Self::Jpeg => FFMS_ColorRanges::FFMS_CR_JPEG,
         }
     }
+
+    const fn new(color_range: i32) -> Self {
+        match color_range {
+            e if e == FFMS_ColorRanges::FFMS_CR_UNSPECIFIED as i32 => {
+                Self::Unspecified
+            }
+            e if e == FFMS_ColorRanges::FFMS_CR_MPEG as i32 => Self::Mpeg,
+            e if e == FFMS_ColorRanges::FFMS_CR_JPEG as i32 => Self::Jpeg,
+
+            _ => Self::Unspecified,
+        }
+    }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum Flip {
+    #[default]
     Unknown,
     Vertical,
     Horizontal,
@@ -132,7 +195,7 @@ impl VideoProperties {
     }
 
     pub const fn color_range(&self) -> ColorRange {
-        self.0.ColorRange
+        ColorRange::new(self.0.ColorRange)
     }
 
     pub const fn first_time(&self) -> f64 {
@@ -148,7 +211,7 @@ impl VideoProperties {
     }
 
     pub const fn stereo3d_type(&self) -> Stereo3DType {
-        self.0.Stereo3DType
+        Stereo3DType::new(self.0.Stereo3DType)
     }
 
     pub const fn stereo3d_flags(&self) -> Stereo3DFlags {
