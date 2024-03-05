@@ -76,7 +76,7 @@ impl AudioProperties {
         self.0.ChannelLayout as usize
     }
 
-    pub const fn samples_number(&self) -> usize {
+    pub const fn samples_count(&self) -> usize {
         self.0.NumSamples as usize
     }
 

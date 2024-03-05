@@ -82,7 +82,7 @@ impl VideoProperties {
         self.0.RFFDenominator as usize
     }
 
-    pub const fn frames_number(&self) -> usize {
+    pub const fn frames_count(&self) -> usize {
         self.0.NumFrames as usize
     }
 

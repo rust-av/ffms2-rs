@@ -1,40 +1,48 @@
 use ffms2_sys::{FFMS_ResampleOptions, FFMS_SampleFormat};
 
-create_enum!(
-    SampleFormat,
-    ffms2_sys::FFMS_SampleFormat,
-    sample_format,
-    (FMT_U8, FMT_S16, FMT_S32, FMT_FLT, FMT_DBL)
-);
+#[derive(Clone, Copy, Debug)]
+pub enum SampleFormat {
+    U8,
+    S16,
+    S32,
+    Flt,
+    Dbl,
+}
 
-simple_enum!(
-    ResampleFilterType,
-    (
-        RESAMPLE_FILTER_CUBIC,
-        RESAMPLE_FILTER_SINC,
-        RESAMPLE_FILTER_KAISER,
-    )
-);
+impl SampleFormat {
+    const fn ffms2_sample_format(self) -> FFMS_SampleFormat {
+        match self {
+            Self::U8 => FFMS_SampleFormat::FFMS_FMT_U8,
+            Self::S16 => FFMS_SampleFormat::FFMS_FMT_S16,
+            Self::S32 => FFMS_SampleFormat::FFMS_FMT_S32,
+            Self::Flt => FFMS_SampleFormat::FFMS_FMT_FLT,
+            Self::Dbl => FFMS_SampleFormat::FFMS_FMT_DBL,
+        }
+    }
+}
 
-simple_enum!(
-    AudioDitherMethod,
-    (
-        RESAMPLE_DITHER_NONE,
-        RESAMPLE_DITHER_RECTANGULAR,
-        RESAMPLE_DITHER_TRIANGULAR,
-        RESAMPLE_DITHER_TRIANGULAR_HIGHPASS,
-        RESAMPLE_DITHER_TRIANGULAR_NOISESHAPING,
-    )
-);
+#[derive(Clone, Copy, Debug)]
+pub enum ResampleFilterType {
+    Cubic,
+    Sinc,
+    Kaiser,
+}
 
-simple_enum!(
-    MixingCoefficientType,
-    (
-        MIXING_COEFFICIENT_Q8,
-        MIXING_COEFFICIENT_Q15,
-        MIXING_COEFFICIENT_FLT,
-    )
-);
+#[derive(Clone, Copy, Debug)]
+pub enum AudioDitherMethod {
+    None,
+    Rectangular,
+    Triangular,
+    TriangularHighPass,
+    TriangularNoiseShaping,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum MixingCoefficientType {
+    Q8,
+    Q15,
+    Flt,
+}
 
 create_struct!(
     ResampleOptions,
@@ -87,7 +95,7 @@ impl ResampleOptions {
 
     pub fn set_sample_format(&mut self, sample_format: &SampleFormat) {
         self.resample.SampleFormat =
-            SampleFormat::to_sample_format(*sample_format);
+            SampleFormat::ffms2_sample_format(*sample_format);
     }
 
     pub fn normalize(&mut self, normalize: bool) {
