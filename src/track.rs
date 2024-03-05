@@ -112,7 +112,7 @@ impl Track {
         let res_frame =
             unsafe { ffms2_sys::FFMS_GetFrameInfo(self.track, Frame as i32) };
         let ref_frame = unsafe { &*res_frame };
-        FrameInfo::create_struct(ref_frame)
+        FrameInfo::new(ref_frame)
     }
 
     pub fn TimeBase(&self) -> TrackTimebase {

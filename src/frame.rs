@@ -11,59 +11,76 @@ use ffms2_sys::{FFMS_Frame, FFMS_FrameInfo, FFMS_Resizers};
 use crate::error::{InternalError, Result};
 use crate::video::VideoSource;
 
-create_enum!(
-    Resizers,
-    FFMS_Resizers,
-    resizers,
-    (
-        RESIZER_FAST_BILINEAR,
-        RESIZER_BILINEAR,
-        RESIZER_BICUBIC,
-        RESIZER_X,
-        RESIZER_POINT,
-        RESIZER_AREA,
-        RESIZER_BICUBLIN,
-        RESIZER_GAUSS,
-        RESIZER_SINC,
-        RESIZER_LANCZOS,
-        RESIZER_SPLINE,
-    )
-);
+const PLANES_NUMBER: usize = 4;
 
-simple_enum!(
-    ChromaLocations,
-    (
-        LOC_UNSPECIFIED,
-        LOC_LEFT,
-        LOC_CENTER,
-        LOC_TOPLEFT,
-        LOC_TOP,
-        LOC_BOTTOMLEFT,
-        LOC_BOTTOM,
-    )
-);
+#[derive(Clone, Copy, Debug)]
+pub enum Resizers {
+    FastBilinear,
+    Bilinear,
+    Bicubic,
+    X,
+    Point,
+    Area,
+    Bicublin,
+    Gauss,
+    Sinc,
+    Lanczos,
+    Spline,
+}
 
-create_struct!(
-    FrameInfo,
-    frame_info,
-    FFMS_FrameInfo,
-    (PTS, RepeatPict, KeyFrame, OriginalPTS),
-    (0, 0, 0, 0)
-);
-
-impl FrameInfo {
-    pub fn KeyFrame(&self) -> usize {
-        self.frame_info.KeyFrame as usize
-    }
-
-    pub(crate) fn create_struct(frame_info: &FFMS_FrameInfo) -> Self {
-        FrameInfo {
-            frame_info: *frame_info,
+impl Resizers {
+    pub(crate) const fn ffms2_resizer(self) -> FFMS_Resizers {
+        match self {
+            Self::FastBilinear => FFMS_Resizers::FFMS_RESIZER_FAST_BILINEAR,
+            Self::Bilinear => FFMS_Resizers::FFMS_RESIZER_BILINEAR,
+            Self::Bicubic => FFMS_Resizers::FFMS_RESIZER_BICUBIC,
+            Self::X => FFMS_Resizers::FFMS_RESIZER_X,
+            Self::Point => FFMS_Resizers::FFMS_RESIZER_POINT,
+            Self::Area => FFMS_Resizers::FFMS_RESIZER_AREA,
+            Self::Bicublin => FFMS_Resizers::FFMS_RESIZER_BICUBLIN,
+            Self::Gauss => FFMS_Resizers::FFMS_RESIZER_GAUSS,
+            Self::Sinc => FFMS_Resizers::FFMS_RESIZER_SINC,
+            Self::Lanczos => FFMS_Resizers::FFMS_RESIZER_LANCZOS,
+            Self::Spline => FFMS_Resizers::FFMS_RESIZER_SPLINE,
         }
     }
 }
 
-const PLANES_NUMBER: usize = 4;
+#[derive(Clone, Copy, Debug)]
+pub enum ChromaLocations {
+    Unspecified,
+    Left,
+    Center,
+    Top,
+    TopLeft,
+    Bottom,
+    BottomLeft,
+}
+
+#[derive(Debug)]
+pub struct FrameInfo(FFMS_FrameInfo);
+
+impl FrameInfo {
+    pub const fn pts(&self) -> usize {
+        self.0.PTS as usize
+    }
+
+    pub const fn repeat_picture(&self) -> usize {
+        self.0.RepeatPict as usize
+    }
+
+    pub const fn keyframe(&self) -> usize {
+        self.0.KeyFrame as usize
+    }
+
+    pub const fn original_pts(&self) -> usize {
+        self.0.OriginalPTS as usize
+    }
+
+    pub(crate) fn new(frame_info: &FFMS_FrameInfo) -> Self {
+        FrameInfo(*frame_info)
+    }
+}
 
 #[derive(Debug)]
 pub struct FrameResolution {
@@ -217,41 +234,47 @@ impl Frame {
         FrameResolution { width, height }
     }
 
-    pub fn new(V: &mut VideoSource, n: usize) -> Result<Self> {
+    pub fn new(
+        video_source: &mut VideoSource,
+        frame_number: usize,
+    ) -> Result<Self> {
         let mut error = InternalError::new();
 
-        let c_frame = unsafe {
+        let ffms2_frame = unsafe {
             ffms2_sys::FFMS_GetFrame(
-                V.as_mut_ptr(),
-                n as i32,
+                video_source.as_mut_ptr(),
+                frame_number as i32,
                 error.as_mut_ptr(),
             )
         };
 
-        if c_frame.is_null() {
+        if ffms2_frame.is_null() {
             Err(error.into())
         } else {
-            let ref_frame = unsafe { &*c_frame };
+            let ref_frame = unsafe { &*ffms2_frame };
 
             Ok(Self(*ref_frame))
         }
     }
 
-    pub fn frame_by_time(V: &mut VideoSource, Time: f64) -> Result<Self> {
+    pub fn frame_by_time(
+        video_source: &mut VideoSource,
+        time: f64,
+    ) -> Result<Self> {
         let mut error = InternalError::new();
 
-        let c_frame = unsafe {
+        let ffms2_frame = unsafe {
             ffms2_sys::FFMS_GetFrameByTime(
-                V.as_mut_ptr(),
-                Time,
+                video_source.as_mut_ptr(),
+                time,
                 error.as_mut_ptr(),
             )
         };
 
-        if c_frame.is_null() {
+        if ffms2_frame.is_null() {
             Err(error.into())
         } else {
-            let ref_frame = unsafe { &*c_frame };
+            let ref_frame = unsafe { &*ffms2_frame };
 
             Ok(Self(*ref_frame))
         }

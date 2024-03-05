@@ -275,7 +275,6 @@ impl VideoSource {
         Resizer: Resizers,
     ) -> Result<()> {
         let mut error = InternalError::new();
-        let resize = Resizers::to_resizers(Resizer) as i32;
         TargetFormats.push(-1);
         let err = unsafe {
             ffms2_sys::FFMS_SetOutputFormatV2(
@@ -283,7 +282,7 @@ impl VideoSource {
                 TargetFormats.as_ptr(),
                 Width as i32,
                 Height as i32,
-                resize,
+                Resizers::ffms2_resizer(Resizer) as i32,
                 error.as_mut_ptr(),
             )
         };
