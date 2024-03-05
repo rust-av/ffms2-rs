@@ -2,8 +2,7 @@ use std::ffi::CString;
 use std::path::Path;
 
 use ffms2_sys::{
-    FFMS_ColorRanges, FFMS_SeekMode, FFMS_Stereo3DFlags, FFMS_Stereo3DType,
-    FFMS_VideoProperties,
+    FFMS_ColorRanges, FFMS_SeekMode, FFMS_Stereo3DFlags, FFMS_VideoProperties,
 };
 
 use crate::error::{InternalError, Result};
@@ -47,36 +46,20 @@ pub enum Stereo3DType {
 
 impl Stereo3DType {
     const fn new(stereo_3d_type: i32) -> Self {
+        use ffms2_sys::FFMS_Stereo3DType::*;
         match stereo_3d_type {
-            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_2D as i32 => {
-                Self::TwoDimensional
-            }
-            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_SIDEBYSIDE as i32 => {
-                Self::SideBySide
-            }
-            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_TOPBOTTOM as i32 => {
-                Self::TopBottom
-            }
-            e if e
-                == FFMS_Stereo3DType::FFMS_S3D_TYPE_FRAMESEQUENCE as i32 =>
-            {
+            e if e == FFMS_S3D_TYPE_2D as i32 => Self::TwoDimensional,
+            e if e == FFMS_S3D_TYPE_SIDEBYSIDE as i32 => Self::SideBySide,
+            e if e == FFMS_S3D_TYPE_TOPBOTTOM as i32 => Self::TopBottom,
+            e if e == FFMS_S3D_TYPE_FRAMESEQUENCE as i32 => {
                 Self::FrameSequence
             }
-            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_CHECKERBOARD as i32 => {
-                Self::CheckerBoard
-            }
-            e if e
-                == FFMS_Stereo3DType::FFMS_S3D_TYPE_SIDEBYSIDE_QUINCUNX
-                    as i32 =>
-            {
+            e if e == FFMS_S3D_TYPE_CHECKERBOARD as i32 => Self::CheckerBoard,
+            e if e == FFMS_S3D_TYPE_SIDEBYSIDE_QUINCUNX as i32 => {
                 Self::SideBySideQuincunx
             }
-            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_LINES as i32 => {
-                Self::Lines
-            }
-            e if e == FFMS_Stereo3DType::FFMS_S3D_TYPE_COLUMNS as i32 => {
-                Self::Columns
-            }
+            e if e == FFMS_S3D_TYPE_LINES as i32 => Self::Lines,
+            e if e == FFMS_S3D_TYPE_COLUMNS as i32 => Self::Columns,
             _ => Self::Unknown,
         }
     }
@@ -118,12 +101,11 @@ impl ColorRange {
     }
 
     const fn new(color_range: i32) -> Self {
+        use ffms2_sys::FFMS_ColorRanges::*;
         match color_range {
-            e if e == FFMS_ColorRanges::FFMS_CR_UNSPECIFIED as i32 => {
-                Self::Unspecified
-            }
-            e if e == FFMS_ColorRanges::FFMS_CR_MPEG as i32 => Self::Mpeg,
-            e if e == FFMS_ColorRanges::FFMS_CR_JPEG as i32 => Self::Jpeg,
+            e if e == FFMS_CR_UNSPECIFIED as i32 => Self::Unspecified,
+            e if e == FFMS_CR_MPEG as i32 => Self::Mpeg,
+            e if e == FFMS_CR_JPEG as i32 => Self::Jpeg,
 
             _ => Self::Unspecified,
         }

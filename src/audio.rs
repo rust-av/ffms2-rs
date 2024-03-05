@@ -12,8 +12,10 @@ use crate::error::{InternalError, Result};
 use crate::index::Index;
 use crate::resample::ResampleOptions;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum AudioChannel {
+    #[default]
+    Unknown,
     FrontLeft,
     FrontRight,
     FrontCenter,
@@ -34,6 +36,39 @@ pub enum AudioChannel {
     TopBackRight,
     StereoLeft,
     StereoRight,
+}
+
+impl AudioChannel {
+    const fn new(audio_channel: i64) -> Self {
+        use ffms2_sys::FFMS_AudioChannel::*;
+        match audio_channel {
+            e if e == FFMS_CH_FRONT_LEFT as i64 => Self::FrontLeft,
+            e if e == FFMS_CH_FRONT_RIGHT as i64 => Self::FrontRight,
+            e if e == FFMS_CH_FRONT_CENTER as i64 => Self::FrontCenter,
+            e if e == FFMS_CH_LOW_FREQUENCY as i64 => Self::LowFrequency,
+            e if e == FFMS_CH_BACK_LEFT as i64 => Self::BackLeft,
+            e if e == FFMS_CH_BACK_RIGHT as i64 => Self::BackRight,
+            e if e == FFMS_CH_FRONT_LEFT_OF_CENTER as i64 => {
+                Self::FrontLeftOfCenter
+            }
+            e if e == FFMS_CH_FRONT_RIGHT_OF_CENTER as i64 => {
+                Self::FrontRightOfCenter
+            }
+            e if e == FFMS_CH_BACK_CENTER as i64 => Self::BackCenter,
+            e if e == FFMS_CH_SIDE_LEFT as i64 => Self::SideLeft,
+            e if e == FFMS_CH_SIDE_RIGHT as i64 => Self::SideRight,
+            e if e == FFMS_CH_TOP_CENTER as i64 => Self::TopCenter,
+            e if e == FFMS_CH_TOP_FRONT_LEFT as i64 => Self::TopFrontLeft,
+            e if e == FFMS_CH_TOP_FRONT_CENTER as i64 => Self::TopFrontCenter,
+            e if e == FFMS_CH_TOP_FRONT_RIGHT as i64 => Self::TopFrontRight,
+            e if e == FFMS_CH_TOP_BACK_LEFT as i64 => Self::TopBackLeft,
+            e if e == FFMS_CH_TOP_BACK_CENTER as i64 => Self::TopBackCenter,
+            e if e == FFMS_CH_TOP_BACK_RIGHT as i64 => Self::TopBackRight,
+            e if e == FFMS_CH_STEREO_LEFT as i64 => Self::StereoLeft,
+            e if e == FFMS_CH_STEREO_RIGHT as i64 => Self::StereoRight,
+            _ => Self::Unknown,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -68,24 +103,15 @@ pub enum MatrixEncoding {
 
 impl MatrixEncoding {
     pub(crate) const fn new(matrix_encoding: FFMS_MatrixEncoding) -> Self {
+        use ffms2_sys::FFMS_MatrixEncoding::*;
         match matrix_encoding {
-            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_NONE => Self::None,
-            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOBLY => Self::Dolby,
-            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_II => {
-                Self::ProLogicII
-            }
-            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_IIX => {
-                Self::ProLogicIIX
-            }
-            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_IIZ => {
-                Self::ProLogicIIZ
-            }
-            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOLBY_EX => {
-                Self::DolbyEx
-            }
-            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOLBY_HEADPHONE => {
-                Self::DolbyHeadphone
-            }
+            FFMS_MATRIX_ENCODING_NONE => Self::None,
+            FFMS_MATRIX_ENCODING_DOBLY => Self::Dolby,
+            FFMS_MATRIX_ENCODING_PRO_LOGIC_II => Self::ProLogicII,
+            FFMS_MATRIX_ENCODING_PRO_LOGIC_IIX => Self::ProLogicIIX,
+            FFMS_MATRIX_ENCODING_PRO_LOGIC_IIZ => Self::ProLogicIIZ,
+            FFMS_MATRIX_ENCODING_DOLBY_EX => Self::DolbyEx,
+            FFMS_MATRIX_ENCODING_DOLBY_HEADPHONE => Self::DolbyHeadphone,
         }
     }
 }
@@ -111,7 +137,7 @@ impl AudioProperties {
     }
 
     pub const fn channel_layout(&self) -> AudioChannel {
-        self.0.ChannelLayout
+        AudioChannel::new(self.0.ChannelLayout)
     }
 
     pub const fn samples_count(&self) -> usize {
