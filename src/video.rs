@@ -100,7 +100,7 @@ impl ColorRange {
         }
     }
 
-    const fn new(color_range: i32) -> Self {
+    pub(crate) const fn new(color_range: i32) -> Self {
         use ffms2_sys::FFMS_ColorRanges::*;
         match color_range {
             e if e == FFMS_CR_UNSPECIFIED as i32 => Self::Unspecified,
@@ -204,8 +204,8 @@ impl VideoProperties {
         self.0.LastEndTime
     }
 
-    pub const fn has_mastering_display_primaries(&self) -> i32 {
-        self.0.HasMasteringDisplayPrimaries
+    pub const fn has_mastering_display_primaries(&self) -> bool {
+        self.0.HasMasteringDisplayPrimaries > 0
     }
 
     pub const fn mastering_display_primaries_x(&self) -> [f64; 3] {
@@ -224,8 +224,8 @@ impl VideoProperties {
         self.0.MasteringDisplayWhitePointY
     }
 
-    pub const fn has_mastering_display_luminance(&self) -> i32 {
-        self.0.HasMasteringDisplayLuminance
+    pub const fn has_mastering_display_luminance(&self) -> bool {
+        self.0.HasMasteringDisplayLuminance > 0
     }
 
     pub const fn mastering_display_min_luminance(&self) -> f64 {
@@ -236,8 +236,8 @@ impl VideoProperties {
         self.0.MasteringDisplayMaxLuminance
     }
 
-    pub const fn has_content_light_level(&self) -> i32 {
-        self.0.HasContentLightLevel
+    pub const fn has_content_light_level(&self) -> bool {
+        self.0.HasContentLightLevel > 0
     }
 
     pub const fn content_light_level_max(&self) -> u32 {

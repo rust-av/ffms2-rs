@@ -108,8 +108,9 @@ impl AudioDelay {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum MatrixEncoding {
+    #[default]
     None,
     Dolby,
     ProLogicII,

@@ -9,7 +9,7 @@ use ffmpeg_the_third::format::Pixel;
 use ffms2_sys::{FFMS_Frame, FFMS_FrameInfo, FFMS_Resizers};
 
 use crate::error::{InternalError, Result};
-use crate::video::VideoSource;
+use crate::video::{ColorRange, VideoSource};
 
 const PLANES_NUMBER: usize = 4;
 
@@ -46,15 +46,32 @@ impl Resizers {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum ChromaLocations {
+#[derive(Clone, Copy, Debug, Default)]
+pub enum ChromaLocation {
+    #[default]
     Unspecified,
     Left,
     Center,
-    Top,
     TopLeft,
-    Bottom,
+    Top,
     BottomLeft,
+    Bottom,
+}
+
+impl ChromaLocation {
+    const fn new(chroma_locations: i32) -> Self {
+        use ffms2_sys::FFMS_ChromaLocations::*;
+        match chroma_locations {
+            e if e == FFMS_LOC_UNSPECIFIED as i32 => Self::Unspecified,
+            e if e == FFMS_LOC_LEFT as i32 => Self::Left,
+            e if e == FFMS_LOC_CENTER as i32 => Self::Center,
+            e if e == FFMS_LOC_TOPLEFT as i32 => Self::TopLeft,
+            e if e == FFMS_LOC_TOP as i32 => Self::Top,
+            e if e == FFMS_LOC_BOTTOMLEFT as i32 => Self::BottomLeft,
+            e if e == FFMS_LOC_BOTTOM as i32 => Self::Bottom,
+            _ => Self::Unspecified,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -159,8 +176,8 @@ impl Frame {
         self.0.ColorSpace as usize
     }
 
-    pub const fn color_range(&self) -> usize {
-        self.0.ColorRange as usize
+    pub const fn color_range(&self) -> ColorRange {
+        ColorRange::new(self.0.ColorRange)
     }
 
     pub const fn color_primaries(&self) -> usize {
@@ -171,12 +188,12 @@ impl Frame {
         self.0.TransferCharateristics as usize
     }
 
-    pub const fn chroma_location(&self) -> usize {
-        self.0.ChromaLocation as usize
+    pub const fn chroma_location(&self) -> ChromaLocation {
+        ChromaLocation::new(self.0.ChromaLocation)
     }
 
-    pub const fn has_mastering_display_primaries(&self) -> usize {
-        self.0.HasMasteringDisplayPrimaries as usize
+    pub const fn has_mastering_display_primaries(&self) -> bool {
+        self.0.HasMasteringDisplayPrimaries > 0
     }
 
     pub const fn mastering_display_primaries_x(&self) -> [f64; 3] {
@@ -195,8 +212,8 @@ impl Frame {
         self.0.MasteringDisplayWhitePointY
     }
 
-    pub const fn has_mastering_display_luminance(&self) -> usize {
-        self.0.HasMasteringDisplayLuminance as usize
+    pub const fn has_mastering_display_luminance(&self) -> bool {
+        self.0.HasMasteringDisplayLuminance > 0
     }
 
     pub const fn mastering_display_min_luminance(&self) -> f64 {
@@ -207,8 +224,8 @@ impl Frame {
         self.0.MasteringDisplayMaxLuminance
     }
 
-    pub const fn has_content_light_level(&self) -> usize {
-        self.0.HasContentLightLevel as usize
+    pub const fn has_content_light_level(&self) -> bool {
+        self.0.HasContentLightLevel > 0
     }
 
     pub const fn content_light_level_max(&self) -> u32 {
