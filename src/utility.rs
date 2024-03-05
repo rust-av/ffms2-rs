@@ -29,24 +29,6 @@ macro_rules! create_enum {
     }
 }
 
-macro_rules! from_i32 {
-    ($enum:ident, $type:ty,
-    ($($field_name:ident),*$(,)*)) => {
-        impl $enum {
-            paste::item! {
-                pub(crate) fn from_i32(e: i32) -> Self {
-                    match e {
-                        $(
-                            e if e == $type::[<FFMS_ $field_name>] as i32 => $enum::$field_name,
-                        )*
-                        _ => unreachable!(),
-                    }
-                }
-            }
-        }
-    }
-}
-
 macro_rules! set_struct {
     ($struct:ident, $param:ident, $type:ty) => {
         pub struct $struct {

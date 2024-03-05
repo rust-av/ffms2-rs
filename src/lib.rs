@@ -14,38 +14,49 @@ use ffms2_sys::{
     FFMS_SetLogLevel,
 };
 
-create_enum!(
-    LogLevel,
-    FFMS_LogLevels,
-    log_level,
-    (
-        LOG_QUIET,
-        LOG_PANIC,
-        LOG_FATAL,
-        LOG_ERROR,
-        LOG_WARNING,
-        LOG_INFO,
-        LOG_VERBOSE,
-        LOG_DEBUG,
-        LOG_TRACE,
-    )
-);
+#[derive(Clone, Copy, Debug)]
+pub enum LogLevel {
+    Quiet,
+    Panic,
+    Fatal,
+    Error,
+    Warning,
+    Info,
+    Verbose,
+    Debug,
+    Trace,
+}
 
-from_i32!(
-    LogLevel,
-    FFMS_LogLevels,
-    (
-        LOG_QUIET,
-        LOG_PANIC,
-        LOG_FATAL,
-        LOG_ERROR,
-        LOG_WARNING,
-        LOG_INFO,
-        LOG_VERBOSE,
-        LOG_DEBUG,
-        LOG_TRACE,
-    )
-);
+impl LogLevel {
+    const fn ffms2_log_level(self) -> FFMS_LogLevels {
+        match self {
+            Self::Quiet => FFMS_LogLevels::FFMS_LOG_QUIET,
+            Self::Panic => FFMS_LogLevels::FFMS_LOG_PANIC,
+            Self::Fatal => FFMS_LogLevels::FFMS_LOG_FATAL,
+            Self::Error => FFMS_LogLevels::FFMS_LOG_ERROR,
+            Self::Warning => FFMS_LogLevels::FFMS_LOG_WARNING,
+            Self::Info => FFMS_LogLevels::FFMS_LOG_INFO,
+            Self::Verbose => FFMS_LogLevels::FFMS_LOG_VERBOSE,
+            Self::Debug => FFMS_LogLevels::FFMS_LOG_DEBUG,
+            Self::Trace => FFMS_LogLevels::FFMS_LOG_TRACE,
+        }
+    }
+
+    const fn new(log_level: i32) -> Self {
+        match log_level {
+            e if e == FFMS_LogLevels::FFMS_LOG_QUIET as i32 => Self::Quiet,
+            e if e == FFMS_LogLevels::FFMS_LOG_PANIC as i32 => Self::Panic,
+            e if e == FFMS_LogLevels::FFMS_LOG_FATAL as i32 => Self::Fatal,
+            e if e == FFMS_LogLevels::FFMS_LOG_ERROR as i32 => Self::Error,
+            e if e == FFMS_LogLevels::FFMS_LOG_WARNING as i32 => Self::Warning,
+            e if e == FFMS_LogLevels::FFMS_LOG_INFO as i32 => Self::Info,
+            e if e == FFMS_LogLevels::FFMS_LOG_VERBOSE as i32 => Self::Verbose,
+            e if e == FFMS_LogLevels::FFMS_LOG_DEBUG as i32 => Self::Debug,
+            e if e == FFMS_LogLevels::FFMS_LOG_TRACE as i32 => Self::Trace,
+            _ => Self::Error,
+        }
+    }
+}
 
 /// Log level settings.
 pub struct Log;
@@ -54,13 +65,13 @@ impl Log {
     /// Returns the current log level.
     pub fn log_level() -> LogLevel {
         let log = unsafe { FFMS_GetLogLevel() };
-        LogLevel::from_i32(log)
+        LogLevel::new(log)
     }
 
     /// Sets a log level.
     pub fn set_log_level(level: LogLevel) {
         unsafe {
-            FFMS_SetLogLevel(LogLevel::to_log_level(level) as i32);
+            FFMS_SetLogLevel(LogLevel::ffms2_log_level(level) as i32);
         }
     }
 }
