@@ -297,9 +297,11 @@ impl Frame {
         }
     }
 
-    pub fn pixel_format(name: &str) -> i32 {
+    pub fn pixel_format(name: &str) -> Pixel {
         let source = CString::new(name).unwrap();
-        unsafe { ffms2_sys::FFMS_GetPixFmt(source.as_ptr()) }
+        let pixel_format =
+            unsafe { ffms2_sys::FFMS_GetPixFmt(source.as_ptr()) };
+        Self::i32_to_pixel_format(pixel_format)
     }
 
     pub fn dolby_vision_rpu(&self) -> &[u8] {
@@ -325,24 +327,13 @@ impl Frame {
     pub fn planes(&self) -> Option<[Option<&[u8]>; PLANES_NUMBER]> {
         let mut planes: [Option<&[u8]>; PLANES_NUMBER] = Default::default();
 
-        // This is not good, but we can't think of any better way to do this.
-        // See https://github.com/rust-av/ffms2-rs/pull/29#discussion_r1115397695
-        // What we've considered:
-        // 1. A large match statement mapping the i32 (from FFMS2) to the AVPixelFormat enum.
-        //    This is an unreasonable amount of work since the AVPixelFormat enum is different
-        //    across versions and build configurations of FFmpeg, all of which we would need to support.
-        // 2. Parsing the pixel format string.
-        //    Although FFMS2 provides a function to get the i32 from the pixel format string,
-        //    there's no function for the other way around.
-        // 3. Making a PR in FFMS2 to expose chrome height in the frame struct.
-        //    This is the best solution; we just gotta find someone to do it.
-        let pix_fmt: AVPixelFormat =
-            unsafe { mem::transmute(self.0.EncodedPixelFormat) };
-
-        let log2_chroma_h = match Pixel::from(pix_fmt).descriptor() {
-            Some(pix_fmt_descriptor) => pix_fmt_descriptor.log2_chroma_h(),
-            None => return None,
-        };
+        let log2_chroma_h =
+            match Self::i32_to_pixel_format(self.0.EncodedPixelFormat)
+                .descriptor()
+            {
+                Some(pix_fmt_descriptor) => pix_fmt_descriptor.log2_chroma_h(),
+                None => return None,
+            };
 
         for (i, (plane, (data, linesize))) in planes
             .iter_mut()
@@ -364,5 +355,21 @@ impl Frame {
         }
 
         Some(planes)
+    }
+
+    fn i32_to_pixel_format(i32_pixel: i32) -> Pixel {
+        // This is not good, but we can't think of any better way to do this.
+        // See https://github.com/rust-av/ffms2-rs/pull/29#discussion_r1115397695
+        // What we've considered:
+        // 1. A large match statement mapping the i32 (from FFMS2) to the AVPixelFormat enum.
+        //    This is an unreasonable amount of work since the AVPixelFormat enum is different
+        //    across versions and build configurations of FFmpeg, all of which we would need to support.
+        // 2. Parsing the pixel format string.
+        //    Although FFMS2 provides a function to get the i32 from the pixel format string,
+        //    there's no function for the other way around.
+        // 3. Making a PR in FFMS2 to expose chrome height in the frame struct.
+        //    This is the best solution; we just gotta find someone to do it.
+        let pix_fmt: AVPixelFormat = unsafe { mem::transmute(i32_pixel) };
+        Pixel::from(pix_fmt)
     }
 }

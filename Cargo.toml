@@ -10,7 +10,7 @@ license = "MIT"
 [dependencies]
 ffms2-sys = { path = "./ffms2-sys"}
 thiserror = "1.0.50"
-ffmpeg-the-third = "1.1.2"
+ffmpeg-the-third = "1.2.2"
 
 [dev-dependencies]
 structopt = "0.3"
