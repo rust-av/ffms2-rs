@@ -2,6 +2,7 @@ pub mod audio;
 pub mod error;
 pub mod frame;
 pub mod index;
+pub mod pixel;
 pub mod resample;
 pub mod track;
 pub mod video;

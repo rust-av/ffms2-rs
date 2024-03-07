@@ -9,6 +9,7 @@ use ffmpeg_the_third::format::Pixel;
 use ffms2_sys::{FFMS_Frame, FFMS_FrameInfo, FFMS_Resizers};
 
 use crate::error::{InternalError, Result};
+use crate::pixel::PixelFormat;
 use crate::video::{ColorRange, VideoSource};
 
 const PLANES_NUMBER: usize = 4;
@@ -136,8 +137,8 @@ impl Frame {
         self.0.EncodedHeight as usize
     }
 
-    pub const fn encoded_pixel_format(&self) -> usize {
-        self.0.EncodedPixelFormat as usize
+    pub const fn encoded_pixel_format(&self) -> PixelFormat {
+        PixelFormat::new(self.0.EncodedPixelFormat)
     }
 
     pub const fn scaled_width(&self) -> usize {
@@ -297,11 +298,11 @@ impl Frame {
         }
     }
 
-    pub fn pixel_format(name: &str) -> Pixel {
+    pub fn pixel_format(name: &str) -> PixelFormat {
         let source = CString::new(name).unwrap();
         let pixel_format =
             unsafe { ffms2_sys::FFMS_GetPixFmt(source.as_ptr()) };
-        Self::i32_to_pixel_format(pixel_format)
+        PixelFormat::new(pixel_format)
     }
 
     pub fn dolby_vision_rpu(&self) -> &[u8] {

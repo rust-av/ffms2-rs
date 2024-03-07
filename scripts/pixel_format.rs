@@ -1,6 +1,36 @@
-fn main() {
-    let a = r#"
-        AV_PIX_FMT_NONE = -1,
+//! This simple program produces a `PixelFormat` enumerator from a specific
+//! FFmpeg `AVPixelFormat` version.
+//!
+//! https://github.com/Luni-4/FFmpeg/blob/master/libavutil/pixfmt.h#L71
+
+use std::fs::File;
+use std::io::Write;
+
+const PIXEL_FORMAT_HEADER: &str = r#"
+/// Pixel format definitions.
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, Copy, Default)]
+pub enum PixelFormat {
+"#;
+
+const PIXEL_FORMAT_FOOTER: &str = r#"
+}
+"#;
+
+const PIXEL_FORMAT_NEW_HEADER: &str = r#"
+impl PixelFormat {
+    pub(crate) const fn new(pixel_format: i32) -> Self {
+        match pixel_format {
+"#;
+
+const PIXEL_FORMAT_NEW_FOOTER: &str = r#"
+        }
+    }
+}
+"#;
+
+const FFMPEG_GREATER_THAN_6_1: &str = r#"
+    AV_PIX_FMT_NONE = -1,
     AV_PIX_FMT_YUV420P,   ///< planar YUV 4:2:0, 12bpp, (1 Cr & Cb sample per 2x2 Y samples)
     AV_PIX_FMT_YUYV422,   ///< packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr
     AV_PIX_FMT_RGB24,     ///< packed RGB 8:8:8, 24bpp, RGBRGB...
@@ -94,7 +124,7 @@ fn main() {
     AV_PIX_FMT_YUV422P9BE, ///< planar YUV 4:2:2, 18bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
     AV_PIX_FMT_YUV422P9LE, ///< planar YUV 4:2:2, 18bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
     AV_PIX_FMT_GBRP,      ///< planar GBR 4:4:4 24bpp
-    AV_PIX_FMT_GBR24P = AV_PIX_FMT_GBRP, // alias for #AV_PIX_FMT_GBRP
+    AV_PIX_FMT_GBR24P = AV_PIX_FMT_GBRP, ///< alias for #AV_PIX_FMT_GBRP
     AV_PIX_FMT_GBRP9BE,   ///< planar GBR 4:4:4 27bpp, big-endian
     AV_PIX_FMT_GBRP9LE,   ///< planar GBR 4:4:4 27bpp, little-endian
     AV_PIX_FMT_GBRP10BE,  ///< planar GBR 4:4:4 30bpp, big-endian
@@ -225,10 +255,6 @@ fn main() {
     AV_PIX_FMT_BAYER_GBRG16BE, ///< bayer, GBGB..(odd line), RGRG..(even line), 16-bit samples, big-endian
     AV_PIX_FMT_BAYER_GRBG16LE, ///< bayer, GRGR..(odd line), BGBG..(even line), 16-bit samples, little-endian
     AV_PIX_FMT_BAYER_GRBG16BE, ///< bayer, GRGR..(odd line), BGBG..(even line), 16-bit samples, big-endian
-
-#if FF_API_XVMC
-    AV_PIX_FMT_XVMC,///< XVideo Motion Acceleration via common packet passing
-#endif
 
     AV_PIX_FMT_YUV440P10LE, ///< planar YUV 4:4:0,20bpp, (1 Cr & Cb sample per 1x2 Y samples), little-endian
     AV_PIX_FMT_YUV440P10BE, ///< planar YUV 4:4:0,20bpp, (1 Cr & Cb sample per 1x2 Y samples), big-endian
@@ -376,48 +402,123 @@ fn main() {
 
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 "#;
-    let mut i = 1;
 
-    for x in a.lines() {
-        let x = x.trim().trim_end();
-        if x == ""
-            || x == "/**"
-            || x == "*/"
-            || x == "#if FF_API_XVMC"
-            || x == "#endif"
-            || x.chars().nth(0).unwrap() == '*'
+// Uppercase first letter.
+fn uppercase_first(data: &str) -> String {
+    let mut result = String::new();
+    let mut first = true;
+    for value in data.chars() {
+        if first {
+            result.push(value.to_ascii_uppercase());
+            first = false;
+        } else {
+            result.push(value);
+        }
+    }
+    result
+}
+
+fn ffmpeg_greater_than_6_1(mut file: File) {
+    write!(file, "{}", PIXEL_FORMAT_HEADER)
+        .expect("Failed writing the format");
+
+    let mut enum_name = Vec::new();
+
+    for line in FFMPEG_GREATER_THAN_6_1.lines() {
+        // Trim line spaces.
+        let line = line.trim().trim_end();
+
+        // Skip lines.
+        if line.is_empty()
+            || line == "/**"
+            || line == "*/"
+            || line.starts_with('*')
         {
             continue;
         }
 
-        if x == "AV_PIX_FMT_NONE = -1," {
-            println!("/// AV_PIX_FMT_NONE");
-            i = i + 1;
+        // Write first line.
+        if line == "AV_PIX_FMT_NONE = -1," {
+            writeln!(file, "/// None\n#[default]\nNone,")
+                .expect("Failed writing the format");
+            enum_name.push("None");
             continue;
         }
-        let x: Vec<_> = x.split("///<").collect();
-        if x.len() == 2 {
-            let x2 = x[1].trim();
-            println!("/// {}", x2);
-            i = i + 1;
+
+        // Split enumerator name and its documentation.
+        let line: Vec<_> = line.split("///<").collect();
+
+        // Write enumerator name and its documentation.
+        if line.len() == 2 {
+            let documentation = line[1].trim();
+            // Manage alias lines.
+            let name = if documentation.contains("alias") {
+                let alias: Vec<_> = line[0].split('=').collect();
+                alias[0].trim().strip_prefix("AV_PIX_FMT_").unwrap()
+            } else {
+                line[0]
+                    .trim()
+                    .strip_suffix(',')
+                    .map_or(line[0], |v| v)
+                    .strip_prefix("AV_PIX_FMT_")
+                    .map(|v| {
+                        if v == "0RGB" {
+                            "ZERORGB"
+                        } else if v == "0BGR" {
+                            "ZEROBGR"
+                        } else {
+                            v
+                        }
+                    })
+                    .unwrap()
+            };
+
+            enum_name.push(name);
+
+            writeln!(
+                file,
+                "/// {}\n{},",
+                uppercase_first(documentation),
+                name,
+            )
+            .expect("Failed writing the format");
             continue;
         }
-        if x.len() == 1 {
-            if x[0].contains("alias") {
-                let x2: Vec<_> = x[0].split("//").collect();
-                println!("/// {}", x2[1].trim());
-                i = i + 1;
-                continue;
-            }
-            println!(
-                "/// {}",
-                x[0].trim().strip_suffix(',').map_or(x[0], |v| v)
-            );
-            i = i + 1;
-            continue;
+
+        // Use the enumerator name as documentation when
+        // no documentation is available.
+        if line.len() == 1 {
+            let line = line[0]
+                .trim()
+                .strip_suffix(',')
+                .map_or(line[0], |v| v)
+                .strip_prefix("AV_PIX_FMT_")
+                .unwrap();
+            enum_name.push(line);
+            writeln!(file, "/// {}\n{},", line, line)
+                .expect("Failed writing the format");
         }
     }
+    writeln!(file, "{}\n\n\n", PIXEL_FORMAT_FOOTER)
+        .expect("Failed writing the format");
 
-    println!();
-    println!("{i}");
+    writeln!(file, "{}", PIXEL_FORMAT_NEW_HEADER)
+        .expect("Failed writing the format");
+
+    for (i, name) in enum_name.into_iter().enumerate() {
+        let i: i32 = i as i32 - 1;
+        writeln!(file, "{} => Self::{},", i, name)
+            .expect("Failed writing the format");
+    }
+
+    writeln!(file, "_ => Self::None,").expect("Failed writing the format");
+
+    writeln!(file, "{}", PIXEL_FORMAT_NEW_FOOTER)
+        .expect("Failed writing the format");
+}
+
+fn main() {
+    ffmpeg_greater_than_6_1(
+        File::create("pixel.rs").expect("Failed opening the file"),
+    );
 }
