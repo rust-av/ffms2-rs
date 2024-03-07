@@ -149,8 +149,8 @@ impl Frame {
         self.0.ScaledHeight as usize
     }
 
-    pub const fn converted_pixel_format(&self) -> usize {
-        self.0.ConvertedPixelFormat as usize
+    pub const fn converted_pixel_format(&self) -> PixelFormat {
+        PixelFormat::new(self.0.ConvertedPixelFormat)
     }
 
     pub const fn keyframe(&self) -> usize {
