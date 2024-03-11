@@ -5,37 +5,58 @@ use std::ffi::CString;
 use std::path::Path;
 
 use ffms2_sys::{
-    FFMS_AudioDelayModes, FFMS_AudioGapFillModes, FFMS_AudioProperties,
-    FFMS_MatrixEncoding,
+    FFMS_AudioDelayModes, FFMS_AudioGapFillModes, FFMS_MatrixEncoding,
 };
 
 use crate::error::{InternalError, Result};
 use crate::index::Index;
 use crate::resample::ResampleOptions;
 
+/// Audio channel layout of an audio stream.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum AudioChannel {
+    /// Unknown audio channel.
     #[default]
     Unknown,
+    /// Front left.
     FrontLeft,
+    /// Front right.
     FrontRight,
+    /// Front center.
     FrontCenter,
+    /// Low Frequency Effects.
     LowFrequency,
+    /// Back left.
     BackLeft,
+    /// Back right.
     BackRight,
+    /// Front left-of-center.
     FrontLeftOfCenter,
+    /// Front right-of-center.
     FrontRightOfCenter,
+    /// Back center.
     BackCenter,
+    /// Side left.
     SideLeft,
+    /// Side right.
     SideRight,
+    /// Top center.
     TopCenter,
+    /// Top front left.
     TopFrontLeft,
+    /// Top front center.
     TopFrontCenter,
+    /// Top front right.
     TopFrontRight,
+    /// Top back left.
     TopBackLeft,
+    /// Top back center.
     TopBackCenter,
+    /// Top back right.
     TopBackRight,
+    /// Stereo downmix left.
     StereoLeft,
+    /// Stereo downmix right.
     StereoRight,
 }
 
@@ -72,10 +93,25 @@ impl AudioChannel {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+/// Modes to manage audio with discontinuous timestamps.
+///
+/// Zero filled gaps can be added or not according to the chosen mode.
+#[derive(Clone, Copy, Debug, Default)]
 pub enum AudioGapFillModes {
+    /// Automatic mode.
+    ///
+    /// Zero filled gaps are applied **only** to audio
+    /// associated with containers where this kind of operation is usually
+    /// necessary.
+    #[default]
     Auto,
+    /// Disabled mode.
+    ///
+    /// Never zero fill gaps.
     Disabled,
+    /// Enabled mode.
+    ///
+    /// Always zero fill gaps.
     Enabled,
 }
 
@@ -89,34 +125,77 @@ impl AudioGapFillModes {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+/// Modes to manage audio delay.
+///
+/// A possible use case could be how to treat the first audio sample in the
+/// file which does not have a timestamp of zero.
+#[derive(Clone, Copy, Debug, Default)]
 pub enum AudioDelay {
+    /// No shift mode.
+    ///
+    /// No adjustment is made. The first decodable audio sample becomes
+    /// the first sample in the output.
     NoShift,
+    /// Time zero mode.
+    ///
+    /// Audio samples are created (with silence) or discarded, so that
+    /// the 0-index sample in the decoded audio starts at time zero.
     TimeZero,
+    /// First video track mode.
+    ///
+    /// Audio samples are created (with silence) or discarded,
+    /// so that the 0-index sample 0 in the decoded audio starts at the same
+    /// time as the 0-index frame of the first video track.
+    ///
+    /// Same as `TimeZero` mode if the first video frame of the first video
+    /// track starts at time zero.
+    ///
+    /// This mode is the default one.
+    #[default]
     FirstVideoTrack,
+    /// Index track mode.
+    ///
+    /// Same as `NoShift`, but it acts on the audio samples of the video
+    /// track passed as input.
+    IndexTrack(usize),
 }
 
 impl AudioDelay {
-    const fn ffms2_audio_delay(self) -> FFMS_AudioDelayModes {
+    const fn ffms2_audio_delay(self) -> i32 {
         match self {
-            Self::NoShift => FFMS_AudioDelayModes::FFMS_DELAY_NO_SHIFT,
-            Self::TimeZero => FFMS_AudioDelayModes::FFMS_DELAY_TIME_ZERO,
-            Self::FirstVideoTrack => {
-                FFMS_AudioDelayModes::FFMS_DELAY_FIRST_VIDEO_TRACK
+            Self::NoShift => FFMS_AudioDelayModes::FFMS_DELAY_NO_SHIFT as i32,
+            Self::TimeZero => {
+                FFMS_AudioDelayModes::FFMS_DELAY_TIME_ZERO as i32
             }
+            Self::FirstVideoTrack => {
+                FFMS_AudioDelayModes::FFMS_DELAY_FIRST_VIDEO_TRACK as i32
+            }
+            Self::IndexTrack(val) => val as i32,
         }
     }
 }
 
+/// Surround Sound Matrix Encoding.
+///
+/// Matrix encoding is an audio technique which transforms N-channel signals to
+/// M-channel signals, where N > M, enabling the same audio content to be
+/// played on different systems.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum MatrixEncoding {
     #[default]
+    /// No matrix encoding.
     None,
+    /// Dolby.
     Dolby,
+    /// Dolby Surround Pro Logic II.
     ProLogicII,
+    /// Dolby Surround Pro Logic IIX.
     ProLogicIIX,
+    /// Dolby Surround Pro Logic IIZ.
     ProLogicIIZ,
+    /// Dolby Digital Ex.
     DolbyEx,
+    /// Dolby Headphone.
     DolbyHeadphone,
 }
 
@@ -135,47 +214,26 @@ impl MatrixEncoding {
     }
 }
 
+/// Audio properties.
 #[derive(Debug)]
-pub struct AudioProperties(FFMS_AudioProperties);
-
-impl AudioProperties {
-    pub const fn sample_format(&self) -> usize {
-        self.0.SampleFormat as usize
-    }
-
-    pub const fn sample_rate(&self) -> usize {
-        self.0.SampleRate as usize
-    }
-
-    pub const fn bits_per_sample(&self) -> usize {
-        self.0.BitsPerSample as usize
-    }
-
-    pub const fn channels(&self) -> usize {
-        self.0.Channels as usize
-    }
-
-    pub const fn channel_layout(&self) -> AudioChannel {
-        AudioChannel::new(self.0.ChannelLayout)
-    }
-
-    pub const fn samples_count(&self) -> usize {
-        self.0.NumSamples as usize
-    }
-
-    pub const fn first_time(&self) -> usize {
-        self.0.FirstTime as usize
-    }
-
-    pub const fn last_time(&self) -> f64 {
-        self.0.LastTime
-    }
-
-    pub const fn last_end_time(&self) -> f64 {
-        self.0.LastEndTime
-    }
+pub struct AudioProperties {
+    pub sample_format: usize,
+    pub sample_rate: usize,
+    pub bits_per_sample: usize,
+    pub channels_count: usize,
+    pub channel_layout: AudioChannel,
+    pub samples_count: usize,
+    pub first_time: usize,
+    pub last_time: f64,
+    pub last_end_time: f64,
 }
 
+/// Audio source manager.
+///
+/// Among its functionalities:
+/// - Opening an audio source
+/// - Retrieving audio samples data
+/// - Setting the output data format
 pub struct AudioSource {
     audio_source: *mut ffms2_sys::FFMS_AudioSource,
 }
@@ -183,6 +241,7 @@ pub struct AudioSource {
 unsafe impl Send for AudioSource {}
 
 impl AudioSource {
+    /// Creates a new `[AudioSource]` instance.
     pub fn new(
         source_file: &Path,
         track: usize,
@@ -208,6 +267,9 @@ impl AudioSource {
         }
     }
 
+    /// Creates a new `[AudioSource]` instance also considering the mode to fill
+    /// audio gaps and the Dynamic Range Compression, which balances the range
+    /// between the loudest and quietest sounds.
     pub fn audio_source_2(
         source_file: &Path,
         track: usize,
@@ -237,14 +299,26 @@ impl AudioSource {
         }
     }
 
+    /// Returns the `[AudioProperties]`.
     pub fn audio_properties(&self) -> AudioProperties {
         let audio_prop =
             unsafe { ffms2_sys::FFMS_GetAudioProperties(self.audio_source) };
-        let ref_audio = unsafe { &*audio_prop };
+        let audio_ref = unsafe { &*audio_prop };
 
-        AudioProperties(*ref_audio)
+        AudioProperties {
+            sample_format: audio_ref.SampleFormat as usize,
+            sample_rate: audio_ref.SampleRate as usize,
+            bits_per_sample: audio_ref.BitsPerSample as usize,
+            channels_count: audio_ref.Channels as usize,
+            channel_layout: AudioChannel::new(audio_ref.ChannelLayout),
+            samples_count: audio_ref.NumSamples as usize,
+            first_time: audio_ref.FirstTime as usize,
+            last_time: audio_ref.LastTime,
+            last_end_time: audio_ref.LastEndTime,
+        }
     }
 
+    /// Returns audio data.
     pub fn audio<T>(
         &self,
         sample_start: usize,
@@ -252,16 +326,14 @@ impl AudioSource {
     ) -> Result<Vec<T>> {
         let mut error = InternalError::new();
         let audio_prop = self.audio_properties();
-        let num_samples = audio_prop.0.NumSamples;
 
-        if sample_start as i64 > (num_samples - 1)
-            || samples_count as i64 > (num_samples - 1)
+        if sample_start > (audio_prop.samples_count - 1)
+            || samples_count > (audio_prop.samples_count - 1)
         {
             panic!("Requesting samples beyond the stream end");
         }
 
-        let num_channels = audio_prop.0.Channels;
-        let num_elements = samples_count * num_channels as usize;
+        let num_elements = samples_count * audio_prop.channels_count;
 
         let buf: Vec<T> = Vec::with_capacity(num_elements);
         let mut buf = mem::ManuallyDrop::new(buf);
@@ -288,6 +360,7 @@ impl AudioSource {
         }
     }
 
+    /// Returns the `[ResampleOptions]`.
     pub fn create_resample_options(&self) -> ResampleOptions {
         let res_opt = unsafe {
             ffms2_sys::FFMS_CreateResampleOptions(self.audio_source)
@@ -297,7 +370,8 @@ impl AudioSource {
         ResampleOptions::create_struct(ref_res)
     }
 
-    pub fn set_output_format(&self, options: &ResampleOptions) -> Result<()> {
+    /// Sets audio samples output format.
+    pub fn output_format(&self, options: &ResampleOptions) -> Result<()> {
         let mut error = InternalError::new();
         let err = unsafe {
             ffms2_sys::FFMS_SetOutputFormatA(
