@@ -1,14 +1,16 @@
 use std::mem;
 
+use std::borrow::Cow;
+use std::path::Path;
+
 use std::ffi::c_void;
 use std::ffi::CString;
-use std::path::Path;
 
 use ffms2_sys::{
     FFMS_AudioDelayModes, FFMS_AudioGapFillModes, FFMS_MatrixEncoding,
 };
 
-use crate::error::{InternalError, Result};
+use crate::error::{Error, InternalError, Result};
 use crate::index::Index;
 use crate::resample::ResampleOptions;
 
@@ -248,7 +250,8 @@ impl AudioSource {
         index: &Index,
         delay_mode: AudioDelay,
     ) -> Result<Self> {
-        let source = CString::new(source_file.to_str().unwrap()).unwrap();
+        let source =
+            CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
         let mut error = InternalError::new();
         let audio_source = unsafe {
             ffms2_sys::FFMS_CreateAudioSource(
@@ -278,7 +281,8 @@ impl AudioSource {
         fill_gaps: AudioGapFillModes,
         drc_scale: f64,
     ) -> Result<Self> {
-        let source = CString::new(source_file.to_str().unwrap()).unwrap();
+        let source =
+            CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
         let mut error = InternalError::new();
         let audio_source = unsafe {
             ffms2_sys::FFMS_CreateAudioSource2(
@@ -330,7 +334,9 @@ impl AudioSource {
         if sample_start > (audio_prop.samples_count - 1)
             || samples_count > (audio_prop.samples_count - 1)
         {
-            panic!("Requesting samples beyond the stream end");
+            return Err(Error::FFMS2(Cow::Borrowed(
+                "Requesting samples beyond the stream end",
+            )));
         }
 
         let num_elements = samples_count * audio_prop.channels_count;

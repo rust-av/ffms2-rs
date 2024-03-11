@@ -1,3 +1,4 @@
+use std::borrow;
 use std::mem;
 use std::ptr;
 use std::str;
@@ -67,14 +68,20 @@ impl InternalError {
 #[derive(Debug, Error)]
 pub enum Error {
     /// An FFMS2 API error.
-    #[error("FFSM2 API error")]
-    FFMS2(String),
+    #[error("FFSM2 API error.")]
+    FFMS2(borrow::Cow<'static, str>),
     /// Failure in retrieving the track.
-    #[error("Impossible to retrieve the track")]
+    #[error("Failed to get the track.")]
     Track,
     /// Failure in getting frames.
-    #[error("Impossible to get frames")]
+    #[error("Failed to get frames.")]
     Frames,
+    /// Failure in converting an operating system string into a str.
+    #[error("str convervion error.")]
+    StrConversion,
+    /// Failure in creating a C string.
+    #[error("Failed to create a C string")]
+    CString(#[from] std::ffi::NulError),
 }
 
 impl From<InternalError> for Error {
@@ -85,7 +92,7 @@ impl From<InternalError> for Error {
             ffms2_error_to_str(internal_error.error.SubType),
             str::from_utf8(&internal_error.buffer).unwrap_or("Unknown error")
         );
-        Self::FFMS2(error)
+        Self::FFMS2(borrow::Cow::Owned(error))
     }
 }
 
