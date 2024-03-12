@@ -6,13 +6,11 @@ use std::path::Path;
 use std::ffi::c_void;
 use std::ffi::CString;
 
-use ffms2_sys::{
-    FFMS_AudioDelayModes, FFMS_AudioGapFillModes, FFMS_MatrixEncoding,
-};
+use ffms2_sys::{FFMS_AudioDelayModes, FFMS_AudioGapFillModes};
 
 use crate::error::{Error, InternalError, Result};
 use crate::index::Index;
-use crate::resample::ResampleOptions;
+use crate::resample::{ResampleOptions, SampleFormat};
 
 /// Audio channel layout of an audio stream.
 #[derive(Clone, Copy, Debug, Default)]
@@ -62,8 +60,9 @@ pub enum AudioChannel {
     StereoRight,
 }
 
+// TODO The i64 is a combination of audio channels.
 impl AudioChannel {
-    const fn new(audio_channel: i64) -> Self {
+    pub(crate) const fn new(audio_channel: i64) -> Self {
         use ffms2_sys::FFMS_AudioChannel::*;
         match audio_channel {
             e if e == FFMS_CH_FRONT_LEFT as i64 => Self::FrontLeft,
@@ -177,56 +176,39 @@ impl AudioDelay {
     }
 }
 
-/// Surround Sound Matrix Encoding.
-///
-/// Matrix encoding is an audio technique which transforms N-channel signals to
-/// M-channel signals, where N > M, enabling the same audio content to be
-/// played on different systems.
-#[derive(Clone, Copy, Debug, Default)]
-pub enum MatrixEncoding {
-    #[default]
-    /// No matrix encoding.
-    None,
-    /// Dolby.
-    Dolby,
-    /// Dolby Surround Pro Logic II.
-    ProLogicII,
-    /// Dolby Surround Pro Logic IIX.
-    ProLogicIIX,
-    /// Dolby Surround Pro Logic IIZ.
-    ProLogicIIZ,
-    /// Dolby Digital Ex.
-    DolbyEx,
-    /// Dolby Headphone.
-    DolbyHeadphone,
-}
-
-impl MatrixEncoding {
-    pub(crate) const fn new(matrix_encoding: FFMS_MatrixEncoding) -> Self {
-        use ffms2_sys::FFMS_MatrixEncoding::*;
-        match matrix_encoding {
-            FFMS_MATRIX_ENCODING_NONE => Self::None,
-            FFMS_MATRIX_ENCODING_DOBLY => Self::Dolby,
-            FFMS_MATRIX_ENCODING_PRO_LOGIC_II => Self::ProLogicII,
-            FFMS_MATRIX_ENCODING_PRO_LOGIC_IIX => Self::ProLogicIIX,
-            FFMS_MATRIX_ENCODING_PRO_LOGIC_IIZ => Self::ProLogicIIZ,
-            FFMS_MATRIX_ENCODING_DOLBY_EX => Self::DolbyEx,
-            FFMS_MATRIX_ENCODING_DOLBY_HEADPHONE => Self::DolbyHeadphone,
-        }
-    }
-}
-
 /// Audio properties.
 #[derive(Debug)]
 pub struct AudioProperties {
-    pub sample_format: usize,
+    /// Audio sample format.
+    pub sample_format: SampleFormat,
+    /// Audio sample rate (samples/second).
     pub sample_rate: usize,
+    /// The number of bits per audio sample.
+    ///
+    /// It represents the number of bits actually used to code each sample,
+    /// not the number of bits used to store each sample,
+    /// and may hence be different from what `[SampleFormat]` would imply.
+    ///
+    /// Figuring out which bytes are significant and which are not is left to
+    /// a developer.
     pub bits_per_sample: usize,
+    /// The number of audio channels.
     pub channels_count: usize,
+    /// Audio stream channel layout.
     pub channel_layout: AudioChannel,
+    /// Audio stream number of samples.
     pub samples_count: usize,
-    pub first_time: usize,
+    /// Audio stream first timestamp in milliseconds.
+    ///
+    /// Useful to know if the audio stream has a delay, or for quickly
+    /// determining its length in seconds.
+    pub first_time: f64,
+    /// Audio stream last timestamp in milliseconds.
+    ///
+    /// Useful to know if the audio stream has a delay, or for quickly
+    /// determining its length in seconds.
     pub last_time: f64,
+    /// Audio stream last packet end time in milliseconds.
     pub last_end_time: f64,
 }
 
@@ -236,9 +218,7 @@ pub struct AudioProperties {
 /// - Opening an audio source
 /// - Retrieving audio samples data
 /// - Setting the output data format
-pub struct AudioSource {
-    audio_source: *mut ffms2_sys::FFMS_AudioSource,
-}
+pub struct AudioSource(*mut ffms2_sys::FFMS_AudioSource);
 
 unsafe impl Send for AudioSource {}
 
@@ -258,7 +238,7 @@ impl AudioSource {
                 source.as_ptr(),
                 track as i32,
                 index.as_mut_ptr(),
-                delay_mode.ffms2_audio_delay() as i32,
+                delay_mode.ffms2_audio_delay(),
                 error.as_mut_ptr(),
             )
         };
@@ -266,7 +246,7 @@ impl AudioSource {
         if audio_source.is_null() {
             Err(error.into())
         } else {
-            Ok(AudioSource { audio_source })
+            Ok(AudioSource(audio_source))
         }
     }
 
@@ -289,7 +269,7 @@ impl AudioSource {
                 source.as_ptr(),
                 track as i32,
                 index.as_mut_ptr(),
-                delay_mode.ffms2_audio_delay() as i32,
+                delay_mode.ffms2_audio_delay(),
                 fill_gaps.ffms2_audio_gap_fill_modes() as i32,
                 drc_scale,
                 error.as_mut_ptr(),
@@ -299,24 +279,23 @@ impl AudioSource {
         if audio_source.is_null() {
             Err(error.into())
         } else {
-            Ok(AudioSource { audio_source })
+            Ok(AudioSource(audio_source))
         }
     }
 
-    /// Returns the `[AudioProperties]`.
+    /// Returns the `[AudioProperties]` structure.
     pub fn audio_properties(&self) -> AudioProperties {
-        let audio_prop =
-            unsafe { ffms2_sys::FFMS_GetAudioProperties(self.audio_source) };
+        let audio_prop = unsafe { ffms2_sys::FFMS_GetAudioProperties(self.0) };
         let audio_ref = unsafe { &*audio_prop };
 
         AudioProperties {
-            sample_format: audio_ref.SampleFormat as usize,
+            sample_format: SampleFormat::new(audio_ref.SampleFormat as usize),
             sample_rate: audio_ref.SampleRate as usize,
             bits_per_sample: audio_ref.BitsPerSample as usize,
             channels_count: audio_ref.Channels as usize,
             channel_layout: AudioChannel::new(audio_ref.ChannelLayout),
             samples_count: audio_ref.NumSamples as usize,
-            first_time: audio_ref.FirstTime as usize,
+            first_time: audio_ref.FirstTime,
             last_time: audio_ref.LastTime,
             last_end_time: audio_ref.LastEndTime,
         }
@@ -347,7 +326,7 @@ impl AudioSource {
 
         let err = unsafe {
             ffms2_sys::FFMS_GetAudio(
-                self.audio_source,
+                self.0,
                 buf_ptr as *mut c_void,
                 sample_start as i64,
                 samples_count as i64,
@@ -366,22 +345,28 @@ impl AudioSource {
         }
     }
 
-    /// Returns the `[ResampleOptions]`.
-    pub fn create_resample_options(&self) -> ResampleOptions {
-        let res_opt = unsafe {
-            ffms2_sys::FFMS_CreateResampleOptions(self.audio_source)
-        };
+    /// Returns the `[ResampleOptions]` structure.
+    pub fn resample_options(&self) -> ResampleOptions {
+        let res_opt = unsafe { ffms2_sys::FFMS_CreateResampleOptions(self.0) };
         let ref_res = unsafe { &*res_opt };
 
-        ResampleOptions::create_struct(ref_res)
+        ResampleOptions::new(ref_res)
     }
 
     /// Sets audio samples output format.
     pub fn output_format(&self, options: &ResampleOptions) -> Result<()> {
+        if matches!(options.channel_layout, AudioChannel::Unknown) {
+            return Err(Error::FFMS2(Cow::Borrowed("Unknown audio channel.")));
+        }
+
+        if matches!(options.sample_format, SampleFormat::Unknown) {
+            return Err(Error::FFMS2(Cow::Borrowed("Unknown sample format.")));
+        }
+
         let mut error = InternalError::new();
         let err = unsafe {
             ffms2_sys::FFMS_SetOutputFormatA(
-                self.audio_source,
+                self.0,
                 options.as_ptr(),
                 error.as_mut_ptr(),
             )
@@ -395,14 +380,14 @@ impl AudioSource {
     }
 
     pub(crate) fn as_mut_ptr(&mut self) -> *mut ffms2_sys::FFMS_AudioSource {
-        self.audio_source
+        self.0
     }
 }
 
 impl Drop for AudioSource {
     fn drop(&mut self) {
         unsafe {
-            ffms2_sys::FFMS_DestroyAudioSource(self.audio_source);
+            ffms2_sys::FFMS_DestroyAudioSource(self.0);
         }
     }
 }
