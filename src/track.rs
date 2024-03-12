@@ -2,7 +2,7 @@ use std::path::Path;
 
 use std::ffi::CString;
 
-use ffms2_sys::{FFMS_TrackTimeBase, FFMS_TrackType};
+use ffms2_sys::FFMS_TrackType;
 
 use crate::error::{Error, InternalError, Result};
 
@@ -52,21 +52,12 @@ impl TrackType {
     }
 }
 
-pub struct TrackTimebase(FFMS_TrackTimeBase);
-
-impl TrackTimebase {
-    pub const fn numerator(&self) -> u64 {
-        self.0.Num as u64
-    }
-
-    pub const fn denominator(&self) -> u64 {
-        self.0.Den as u64
-    }
+pub struct TrackTimebase {
+    pub numerator: usize,
+    pub denominator: usize,
 }
 
-pub struct Track {
-    track: *mut ffms2_sys::FFMS_Track,
-}
+pub struct Track(*mut ffms2_sys::FFMS_Track);
 
 unsafe impl Send for Track {}
 
@@ -97,7 +88,7 @@ impl Track {
         let mut error = InternalError::new();
         let err = unsafe {
             ffms2_sys::FFMS_WriteTimecodes(
-                self.track,
+                self.0,
                 source.as_ptr(),
                 error.as_mut_ptr(),
             )
@@ -112,24 +103,28 @@ impl Track {
 
     pub fn frame_info(&self, frame: usize) -> FrameInfo {
         let res_frame =
-            unsafe { ffms2_sys::FFMS_GetFrameInfo(self.track, frame as i32) };
+            unsafe { ffms2_sys::FFMS_GetFrameInfo(self.0, frame as i32) };
         let ref_frame = unsafe { &*res_frame };
         FrameInfo::new(ref_frame)
     }
 
     pub fn time_base(&self) -> TrackTimebase {
-        let res_track = unsafe { ffms2_sys::FFMS_GetTimeBase(self.track) };
+        let res_track = unsafe { ffms2_sys::FFMS_GetTimeBase(self.0) };
         let ref_track = unsafe { &*res_track };
-        TrackTimebase(*ref_track)
+
+        TrackTimebase {
+            numerator: ref_track.Num as usize,
+            denominator: ref_track.Den as usize,
+        }
     }
 
     pub fn track_type(&self) -> TrackType {
-        let track_type = unsafe { ffms2_sys::FFMS_GetTrackType(self.track) };
+        let track_type = unsafe { ffms2_sys::FFMS_GetTrackType(self.0) };
         TrackType::new(track_type)
     }
 
     pub fn frames_count(&self) -> Result<usize> {
-        let num_frames = unsafe { ffms2_sys::FFMS_GetNumFrames(self.track) };
+        let num_frames = unsafe { ffms2_sys::FFMS_GetNumFrames(self.0) };
         if num_frames < 0 {
             Err(Error::Frames)
         } else {
@@ -142,7 +137,7 @@ impl Track {
         if num_frames < 0 {
             Err(Error::Track)
         } else {
-            Ok(Self { track })
+            Ok(Self(track))
         }
     }
 }
