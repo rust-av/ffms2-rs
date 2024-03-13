@@ -57,32 +57,37 @@ pub struct TrackTimebase {
     pub denominator: usize,
 }
 
+/// A source track.
 pub struct Track(*mut ffms2_sys::FFMS_Track);
 
 unsafe impl Send for Track {}
 
 impl Track {
-    pub fn track_from_index(index: &Index, track: usize) -> Result<Self> {
+    /// Builds a new `[Track]` from an index.
+    pub fn from_index(index: &Index, track: usize) -> Result<Self> {
         let track = unsafe {
             ffms2_sys::FFMS_GetTrackFromIndex(index.as_mut_ptr(), track as i32)
         };
         Self::evaluate_track(track)
     }
 
-    pub fn track_from_video(video_source: &mut VideoSource) -> Result<Self> {
+    /// Builds a new `[Track]` from a video source.
+    pub fn from_video(video_source: &mut VideoSource) -> Result<Self> {
         let track = unsafe {
             ffms2_sys::FFMS_GetTrackFromVideo(video_source.as_mut_ptr())
         };
         Self::evaluate_track(track)
     }
 
-    pub fn track_from_audio(audio_source: &mut AudioSource) -> Result<Self> {
+    /// Builds a new `[Track]` from an audio source.
+    pub fn from_audio(audio_source: &mut AudioSource) -> Result<Self> {
         let track = unsafe {
             ffms2_sys::FFMS_GetTrackFromAudio(audio_source.as_mut_ptr())
         };
         Self::evaluate_track(track)
     }
 
+    /// Writes track timecodes in a file.
     pub fn write_timecodes(&self, timecode_file: &Path) -> Result<()> {
         let source = CString::new(timecode_file.to_str().unwrap()).unwrap();
         let mut error = InternalError::new();
@@ -101,6 +106,7 @@ impl Track {
         }
     }
 
+    /// Returns the information on the indexed frame passed as input.
     pub fn frame_info(&self, frame: usize) -> FrameInfo {
         let res_frame =
             unsafe { ffms2_sys::FFMS_GetFrameInfo(self.0, frame as i32) };
@@ -108,6 +114,7 @@ impl Track {
         FrameInfo::new(ref_frame)
     }
 
+    /// Returns the track timebase information.
     pub fn time_base(&self) -> TrackTimebase {
         let res_track = unsafe { ffms2_sys::FFMS_GetTimeBase(self.0) };
         let ref_track = unsafe { &*res_track };
@@ -118,11 +125,13 @@ impl Track {
         }
     }
 
+    /// Returns the track type.
     pub fn track_type(&self) -> TrackType {
         let track_type = unsafe { ffms2_sys::FFMS_GetTrackType(self.0) };
         TrackType::new(track_type)
     }
 
+    /// Returns the number of frames present in the track.
     pub fn frames_count(&self) -> Result<usize> {
         let num_frames = unsafe { ffms2_sys::FFMS_GetNumFrames(self.0) };
         if num_frames < 0 {
