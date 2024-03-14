@@ -6,17 +6,17 @@ use std::path::Path;
 use std::ffi::c_void;
 use std::ffi::CString;
 
-use ffms2_sys::{FFMS_AudioDelayModes, FFMS_AudioGapFillModes};
+use ffms2_sys::{
+    FFMS_AudioChannel, FFMS_AudioDelayModes, FFMS_AudioGapFillModes,
+};
 
 use crate::error::{Error, InternalError, Result};
 use crate::index::Index;
 use crate::resample::{ResampleOptions, SampleFormat};
 
 /// Audio channel layout of an audio stream.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub enum AudioChannel {
-    /// Unknown audio channel.
-    #[default]
     Unknown,
     /// Front left.
     FrontLeft,
@@ -60,37 +60,70 @@ pub enum AudioChannel {
     StereoRight,
 }
 
-// TODO The i64 is a combination of audio channels.
 impl AudioChannel {
-    pub(crate) const fn new(audio_channel: i64) -> Self {
-        use ffms2_sys::FFMS_AudioChannel::*;
-        match audio_channel {
-            e if e == FFMS_CH_FRONT_LEFT as i64 => Self::FrontLeft,
-            e if e == FFMS_CH_FRONT_RIGHT as i64 => Self::FrontRight,
-            e if e == FFMS_CH_FRONT_CENTER as i64 => Self::FrontCenter,
-            e if e == FFMS_CH_LOW_FREQUENCY as i64 => Self::LowFrequency,
-            e if e == FFMS_CH_BACK_LEFT as i64 => Self::BackLeft,
-            e if e == FFMS_CH_BACK_RIGHT as i64 => Self::BackRight,
-            e if e == FFMS_CH_FRONT_LEFT_OF_CENTER as i64 => {
-                Self::FrontLeftOfCenter
-            }
-            e if e == FFMS_CH_FRONT_RIGHT_OF_CENTER as i64 => {
-                Self::FrontRightOfCenter
-            }
-            e if e == FFMS_CH_BACK_CENTER as i64 => Self::BackCenter,
-            e if e == FFMS_CH_SIDE_LEFT as i64 => Self::SideLeft,
-            e if e == FFMS_CH_SIDE_RIGHT as i64 => Self::SideRight,
-            e if e == FFMS_CH_TOP_CENTER as i64 => Self::TopCenter,
-            e if e == FFMS_CH_TOP_FRONT_LEFT as i64 => Self::TopFrontLeft,
-            e if e == FFMS_CH_TOP_FRONT_CENTER as i64 => Self::TopFrontCenter,
-            e if e == FFMS_CH_TOP_FRONT_RIGHT as i64 => Self::TopFrontRight,
-            e if e == FFMS_CH_TOP_BACK_LEFT as i64 => Self::TopBackLeft,
-            e if e == FFMS_CH_TOP_BACK_CENTER as i64 => Self::TopBackCenter,
-            e if e == FFMS_CH_TOP_BACK_RIGHT as i64 => Self::TopBackRight,
-            e if e == FFMS_CH_STEREO_LEFT as i64 => Self::StereoLeft,
-            e if e == FFMS_CH_STEREO_RIGHT as i64 => Self::StereoRight,
-            _ => Self::Unknown,
-        }
+    const AUDIO_CHANNELS: [(FFMS_AudioChannel, AudioChannel); 20] = [
+        // First 4 bits block from right
+        (FFMS_AudioChannel::FFMS_CH_FRONT_LEFT, Self::FrontLeft),
+        (FFMS_AudioChannel::FFMS_CH_FRONT_RIGHT, Self::FrontRight),
+        (FFMS_AudioChannel::FFMS_CH_FRONT_CENTER, Self::FrontCenter),
+        (FFMS_AudioChannel::FFMS_CH_LOW_FREQUENCY, Self::LowFrequency),
+        // Second 4 bits block from right
+        (FFMS_AudioChannel::FFMS_CH_BACK_LEFT, Self::BackLeft),
+        (FFMS_AudioChannel::FFMS_CH_BACK_RIGHT, Self::BackRight),
+        (
+            FFMS_AudioChannel::FFMS_CH_FRONT_LEFT_OF_CENTER,
+            Self::FrontLeftOfCenter,
+        ),
+        (
+            FFMS_AudioChannel::FFMS_CH_FRONT_RIGHT_OF_CENTER,
+            Self::FrontRightOfCenter,
+        ),
+        // Third 4 bits block from right
+        (FFMS_AudioChannel::FFMS_CH_BACK_CENTER, Self::BackCenter),
+        (FFMS_AudioChannel::FFMS_CH_SIDE_LEFT, Self::SideLeft),
+        (FFMS_AudioChannel::FFMS_CH_SIDE_RIGHT, Self::SideRight),
+        (FFMS_AudioChannel::FFMS_CH_TOP_CENTER, Self::TopCenter),
+        // Fourth 4 bits block from right
+        (
+            FFMS_AudioChannel::FFMS_CH_TOP_FRONT_LEFT,
+            Self::TopFrontLeft,
+        ),
+        (
+            FFMS_AudioChannel::FFMS_CH_TOP_FRONT_CENTER,
+            Self::TopFrontCenter,
+        ),
+        (
+            FFMS_AudioChannel::FFMS_CH_TOP_FRONT_RIGHT,
+            Self::TopFrontRight,
+        ),
+        (FFMS_AudioChannel::FFMS_CH_TOP_BACK_LEFT, Self::TopBackLeft),
+        // Fifth 4 bits block from right
+        (
+            FFMS_AudioChannel::FFMS_CH_TOP_BACK_CENTER,
+            Self::TopBackCenter,
+        ),
+        (
+            FFMS_AudioChannel::FFMS_CH_TOP_BACK_RIGHT,
+            Self::TopBackRight,
+        ),
+        // Eight 4 bits from right
+        (FFMS_AudioChannel::FFMS_CH_STEREO_LEFT, Self::StereoLeft),
+        (FFMS_AudioChannel::FFMS_CH_STEREO_RIGHT, Self::StereoRight),
+    ];
+
+    pub(crate) fn channel_map(audio_channel: i64) -> Option<Vec<Self>> {
+        let audio_channels = Self::AUDIO_CHANNELS
+            .iter()
+            .flat_map(|(ffms2_channel, channel)| {
+                if audio_channel & *ffms2_channel as i64 == 1 {
+                    Some(*channel)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<Self>>();
+
+        audio_channels.is_empty().then_some(audio_channels)
     }
 }
 
@@ -195,7 +228,9 @@ pub struct AudioProperties {
     /// The number of audio channels.
     pub channels_count: usize,
     /// Audio stream channel layout.
-    pub channel_layout: AudioChannel,
+    ///
+    /// If `None`, no channel layout has been found.
+    pub channel_layout: Option<Vec<AudioChannel>>,
     /// Audio stream number of samples.
     pub samples_count: usize,
     /// Audio stream first timestamp in milliseconds.
@@ -293,7 +328,7 @@ impl AudioSource {
             sample_rate: audio_ref.SampleRate as usize,
             bits_per_sample: audio_ref.BitsPerSample as usize,
             channels_count: audio_ref.Channels as usize,
-            channel_layout: AudioChannel::new(audio_ref.ChannelLayout),
+            channel_layout: AudioChannel::channel_map(audio_ref.ChannelLayout),
             samples_count: audio_ref.NumSamples as usize,
             first_time: audio_ref.FirstTime,
             last_time: audio_ref.LastTime,
@@ -355,7 +390,7 @@ impl AudioSource {
 
     /// Sets audio samples output format.
     pub fn output_format(&self, options: &ResampleOptions) -> Result<()> {
-        if matches!(options.channel_layout, AudioChannel::Unknown) {
+        if options.channel_layout.is_none() {
             return Err(Error::FFMS2(Cow::Borrowed("Unknown audio channel.")));
         }
 

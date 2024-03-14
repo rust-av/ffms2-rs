@@ -160,7 +160,9 @@ impl MixingCoefficientType {
 #[derive(Debug)]
 pub struct ResampleOptions {
     /// Audio stream channel layout.
-    pub channel_layout: AudioChannel,
+    ///
+    /// If `None`, no channel layout has been found.
+    pub channel_layout: Option<Vec<AudioChannel>>,
     /// Audio stream sample format.
     pub sample_format: SampleFormat,
     /// Audio stream sample rate.
@@ -209,7 +211,7 @@ unsafe impl Send for ResampleOptions {}
 impl ResampleOptions {
     pub(crate) fn new(resample: &FFMS_ResampleOptions) -> Self {
         Self {
-            channel_layout: AudioChannel::new(resample.ChannelLayout),
+            channel_layout: AudioChannel::channel_map(resample.ChannelLayout),
             sample_format: SampleFormat::new(resample.SampleFormat as usize),
             sample_rate: resample.SampleRate as usize,
             mixing_coefficient_type: MixingCoefficientType::new(
