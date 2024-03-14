@@ -12,16 +12,33 @@ use ffms2_sys::{
     FFMS_SetLogLevel,
 };
 
-#[derive(Clone, Copy, Debug)]
+/// Logging/Message level.
+#[derive(Clone, Copy, Debug, Default)]
 pub enum LogLevel {
+    /// Show nothing.
     Quiet,
+    /// Show fatal errors which could lead the process to crash, such as an
+    /// assertion failure.
     Panic,
+    /// Show fatal errors after which the process cannot absolutely continue.
     Fatal,
+    /// Show all errors, including ones which can be recovered from.
     Error,
+    /// Show all warnings and errors.
+    ///
+    /// Any message related to possibly incorrect or unexpected events
+    /// will be shown.
     Warning,
+    /// Show informative messages during processing.
+    ///
+    /// This is in addition to warnings and errors.
+    #[default]
     Info,
+    /// Same as `Info`, except more verbose.
     Verbose,
+    /// Show everything, including debugging information.
     Debug,
+    /// Show everything in addition to function tracing information.
     Trace,
 }
 
@@ -60,13 +77,13 @@ impl LogLevel {
 pub struct Log;
 
 impl Log {
-    /// Returns the current log level.
+    /// Returns the current logging/message level.
     pub fn log_level() -> LogLevel {
         let log = unsafe { FFMS_GetLogLevel() };
         LogLevel::new(log)
     }
 
-    /// Sets a log level.
+    /// Sets logging/message level.
     pub fn set_log_level(level: LogLevel) {
         unsafe {
             FFMS_SetLogLevel(LogLevel::ffms2_log_level(level) as i32);
@@ -74,18 +91,22 @@ impl Log {
     }
 }
 
-/// FFMS2 initializer.
+/// The `ffms2` initializer.
 pub struct FFMS2;
 
 impl FFMS2 {
-    /// Initializes FFMS2.
+    /// Initializes the `ffms2` library.
+    ///
+    /// It must be called once at the start of a program, before doing any other
+    /// `ffms2` function calls. This function is thread safe and will only
+    /// run once.
     pub fn init() {
         unsafe {
             FFMS_Init(0, 0);
         }
     }
 
-    /// Returns FFMS2 version.
+    /// Returns the `ffms2` version.
     pub fn version() -> usize {
         unsafe { FFMS_GetVersion() as usize }
     }
