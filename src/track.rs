@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::path::Path;
 
 use std::ffi::CString;
@@ -11,13 +12,28 @@ use crate::frame::FrameInfo;
 use crate::index::Index;
 use crate::video::VideoSource;
 
+/// Track type.
+///
+/// It defines the datatype contained in a multimedia stream.
 #[derive(Clone, Copy, Debug)]
 pub enum TrackType {
+    /// Unknown datatype.
     Unknown,
+    /// A video stream.
     Video,
+    /// An audio stream.
     Audio,
+    /// A stream of bytes.
+    ///
+    /// Not supported by ffms2.
     Data,
+    /// A subtitle stream.
+    ///
+    /// Not supported by ffms2,
     Subtitle,
+    /// Attachment stream.
+    ///
+    /// Not supported by ffms2.
     Attachment,
 }
 
@@ -52,26 +68,50 @@ impl TrackType {
     }
 }
 
+/// Basic time unit of a track.
+///
+/// This information are only meaningful for video tracks.
+///
+/// The rational number obtained dividing the `numerator` and `denominator`
+/// fields of this structure might occasionally be equal to`1/framerate`
+/// for some CFR video tracks.
+/// However, this similarity has no relation whatsoever with the video framerate
+/// and it is not related at all with any framerate concept.
 pub struct TrackTimebase {
+    /// Timebase numerator.
     pub numerator: usize,
+    /// Timebase denominator.
     pub denominator: usize,
 }
 
-/// A source track.
+/// A track contains all information associated to a given multimedia stream.
+///
+/// It does not contain any index information.
 pub struct Track(*mut ffms2_sys::FFMS_Track);
 
 unsafe impl Send for Track {}
 
 impl Track {
-    /// Builds a new `[Track]` from an index.
-    pub fn from_index(index: &Index, track: usize) -> Result<Self> {
+    /// Builds a `[Track]` from the given `[Index]` and track number.
+    pub fn from_index(index: &Index, track_number: usize) -> Result<Self> {
+        if track_number > index.tracks_count() - 1 {
+            return Err(Error::FFMS2(Cow::Borrowed(
+                "The track number does not exist.",
+            )));
+        }
+
         let track = unsafe {
-            ffms2_sys::FFMS_GetTrackFromIndex(index.as_mut_ptr(), track as i32)
+            ffms2_sys::FFMS_GetTrackFromIndex(
+                index.as_mut_ptr(),
+                track_number as i32,
+            )
         };
         Self::evaluate_track(track)
     }
 
     /// Builds a new `[Track]` from a video source.
+    ///
+    /// The `[TrackType]` is `Video`.
     pub fn from_video(video_source: &mut VideoSource) -> Result<Self> {
         let track = unsafe {
             ffms2_sys::FFMS_GetTrackFromVideo(video_source.as_mut_ptr())
@@ -80,6 +120,8 @@ impl Track {
     }
 
     /// Builds a new `[Track]` from an audio source.
+    ///
+    /// The `[TrackType]` is `Audio`.
     pub fn from_audio(audio_source: &mut AudioSource) -> Result<Self> {
         let track = unsafe {
             ffms2_sys::FFMS_GetTrackFromAudio(audio_source.as_mut_ptr())
@@ -87,9 +129,13 @@ impl Track {
         Self::evaluate_track(track)
     }
 
-    /// Writes track timecodes in a file.
+    /// Writes `Matroska` v2 timecodes for the track in a file.
+    ///
+    /// Only meaningful for video tracks.
     pub fn write_timecodes(&self, timecode_file: &Path) -> Result<()> {
-        let source = CString::new(timecode_file.to_str().unwrap()).unwrap();
+        let source =
+            CString::new(timecode_file.to_str().ok_or(Error::StrConversion)?)?;
+
         let mut error = InternalError::new();
         let err = unsafe {
             ffms2_sys::FFMS_WriteTimecodes(
@@ -115,6 +161,8 @@ impl Track {
     }
 
     /// Returns the track timebase information.
+    ///
+    /// Only meaningful for video tracks.
     pub fn time_base(&self) -> TrackTimebase {
         let res_track = unsafe { ffms2_sys::FFMS_GetTimeBase(self.0) };
         let ref_track = unsafe { &*res_track };
@@ -132,6 +180,12 @@ impl Track {
     }
 
     /// Returns the number of frames present in the track.
+    ///
+    /// This value is:
+    /// - the number of video frames for a video track
+    /// - the number of packets for an audio track
+    ///
+    /// An error indicates the track has not been indexed.
     pub fn frames_count(&self) -> Result<usize> {
         let num_frames = unsafe { ffms2_sys::FFMS_GetNumFrames(self.0) };
         if num_frames < 0 {

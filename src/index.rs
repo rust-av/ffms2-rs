@@ -195,6 +195,7 @@ impl Index {
         }
     }
 
+    /// Returns the number of indexed tracks.
     pub fn tracks_count(&self) -> usize {
         unsafe { ffms2_sys::FFMS_GetNumTracks(self.index) as usize }
     }
