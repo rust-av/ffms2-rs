@@ -306,7 +306,8 @@ impl Indexer {
         TrackType::new(track_type)
     }
 
-    pub fn cancel_indexing(&self) {
+    /// Cancels the indexing process.
+    pub fn cancel(&self) {
         unsafe {
             ffms2_sys::FFMS_CancelIndexing(self.0);
         }
@@ -359,6 +360,19 @@ impl Indexer {
         }
     }
 
+    /// Sets a callback function for indexing progress updates.
+    ///
+    /// A progress callback is called regularly during indexing to report
+    /// progress. It also offers the chance to interrupt indexing.
+    ///
+    /// Callback function's arguments are:
+    /// - current: the current progress percentage
+    /// - total: the maximum progress percentage
+    /// - fixed percentage: an optional value which can be passed to the
+    ///   function in order to modify the progress process.
+    ///
+    /// The indexing progress is usually calculated
+    /// dividing `current` by `total`.
     pub fn progress_callback<F>(&self, callback: F, value: &mut usize)
     where
         F: FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,
