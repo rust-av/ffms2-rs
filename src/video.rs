@@ -9,12 +9,43 @@ use crate::error::{InternalError, Result};
 use crate::frame::Resizers;
 use crate::index::Index;
 
+/// File seeking mode.
+///
+/// Each mode provides a different way of managing file seeking.
 #[derive(Clone, Copy, Debug)]
 pub enum SeekMode {
+    /// Linear access without rewind.
+    ///
+    /// In this mode, an error is thrown whether each successive frame number
+    /// request is smaller than the last one.
+    ///
+    /// It is only intended for opening images, but it might work the same
+    /// even with not so well known video formats.
     LinearNoRW,
+    /// Linear access.
+    ///
+    /// If a frame `n` is requested, without having requested before frames from
+    /// 0 to `n-1`, in this very order, then all frames from 0 to `n-1`
+    /// will have to be decoded before frame `n` can be delivered.
+    ///
+    /// This mode is pretty slow, but needed for some kinds of formats.
     Linear,
+    /// Safe normal mode.
+    ///
+    /// Seeking decisions are based on the keyframe positions.
     Normal,
+    /// Unsafe normal mode.
+    ///
+    /// Same as `Normal` mode, but no error will be thrown when the exact
+    /// destination has to be guessed.
     Unsafe,
+    /// Aggressive mode.
+    ///
+    /// It seeks in the forward direction even if no closer keyframe is known
+    /// to exist.
+    ///
+    /// Only useful for testing purposes and those containers whose keyframes
+    /// are not reported properly.
     Aggressive,
 }
 

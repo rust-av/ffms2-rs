@@ -10,14 +10,21 @@ use std::path::Path;
 
 use ffms2_sys::FFMS_IndexErrorHandling;
 
-use crate::error::{InternalError, Result};
+use crate::error::{Error, InternalError, Result};
 use crate::track::TrackType;
 
+/// Decision mode when a decoding error is encountered during indexing.
 #[derive(Clone, Copy, Debug)]
 pub enum IndexErrorHandling {
+    /// Abort the indexing operation and raise an error.
     Abort,
+    /// Clear all indexing entries for a track and return a blank track.
     ClearTrack,
+    /// Stop the indexing operation, but keep all previous indexing entries.
+    ///
+    /// It returns a track stopped where the error had occurred.
     StopTrack,
+    /// Ignore decoding error.
     Ignore,
 }
 
@@ -44,25 +51,28 @@ impl IndexErrorHandling {
 impl fmt::Display for IndexErrorHandling {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = match self {
-            Self::Abort => "Index error aborting.",
-            Self::ClearTrack => "Index error clear track.",
-            Self::StopTrack => "Index error stop track.",
-            Self::Ignore => "Index error ignore.",
+            Self::Abort => "Abort indexing operation.",
+            Self::ClearTrack => {
+                "Return a blank track because a decoding error occurred during indexing."
+            }
+            Self::StopTrack => {
+                "Stop track indexing because a decoding error occurred."
+            }
+            Self::Ignore => "Ignore decoding error.",
         };
         s.fmt(f)
     }
 }
 
-pub struct Index {
-    index: *mut ffms2_sys::FFMS_Index,
-    buffer: Vec<u8>,
-}
+pub struct Index(*mut ffms2_sys::FFMS_Index, Vec<u8>);
 
 unsafe impl Send for Index {}
 
 impl Index {
+    /// Creates a new `[Index]` from the filepath passed as input.
     pub fn new(index_file: &Path) -> Result<Self> {
-        let source = CString::new(index_file.to_str().unwrap()).unwrap();
+        let source =
+            CString::new(index_file.to_str().ok_or(Error::StrConversion)?)?;
         let mut error = InternalError::new();
         let index = unsafe {
             ffms2_sys::FFMS_ReadIndex(source.as_ptr(), error.as_mut_ptr())
@@ -71,20 +81,17 @@ impl Index {
         if index.is_null() {
             Err(error.into())
         } else {
-            Ok(Index {
-                index,
-                buffer: Vec::new(),
-            })
+            Ok(Index(index, Vec::new()))
         }
     }
 
     pub fn error_handling(&self) -> IndexErrorHandling {
         let index_error_handling =
-            unsafe { ffms2_sys::FFMS_GetErrorHandling(self.index) };
+            unsafe { ffms2_sys::FFMS_GetErrorHandling(self.0) };
         IndexErrorHandling::new(index_error_handling)
     }
 
-    pub fn read_index_from_buffer(buffer: &[u8]) -> Result<Self> {
+    pub fn from_buffer(buffer: &[u8]) -> Result<Self> {
         let mut error = InternalError::new();
         let size = mem::size_of_val(buffer);
         let index = unsafe {
@@ -98,19 +105,17 @@ impl Index {
         if index.is_null() {
             Err(error.into())
         } else {
-            Ok(Index {
-                index,
-                buffer: Vec::new(),
-            })
+            Ok(Index(index, Vec::new()))
         }
     }
 
-    pub fn index_belongs_to_file(&self, source_file: &Path) -> Result<()> {
-        let source = CString::new(source_file.to_str().unwrap()).unwrap();
+    pub fn belongs_to_file(&self, source_file: &Path) -> Result<()> {
+        let source =
+            CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
         let mut error = InternalError::new();
         let err = unsafe {
             ffms2_sys::FFMS_IndexBelongsToFile(
-                self.index,
+                self.0,
                 source.as_ptr(),
                 error.as_mut_ptr(),
             )
@@ -123,13 +128,15 @@ impl Index {
         }
     }
 
-    pub fn write_index(&self, source_file: &Path) -> Result<()> {
-        let source = CString::new(source_file.to_str().unwrap()).unwrap();
+    pub fn write_to_file(&self, source_file: &Path) -> Result<()> {
+        let source =
+            CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
+
         let mut error = InternalError::new();
         let err = unsafe {
             ffms2_sys::FFMS_WriteIndex(
                 source.as_ptr(),
-                self.index,
+                self.0,
                 error.as_mut_ptr(),
             )
         };
@@ -141,14 +148,14 @@ impl Index {
         }
     }
 
-    pub fn write_index_to_buffer(&mut self) -> Result<&Vec<u8>> {
+    pub fn write_to_buffer(&mut self) -> Result<&Vec<u8>> {
         let mut error = InternalError::new();
         let mut size = 0;
         let err = unsafe {
             ffms2_sys::FFMS_WriteIndexToBuffer(
-                &mut self.buffer.as_mut_ptr(),
+                &mut self.1.as_mut_ptr(),
                 &mut size,
-                self.index,
+                self.0,
                 error.as_mut_ptr(),
             )
         };
@@ -156,7 +163,7 @@ impl Index {
         if err != 0 {
             Err(error.into())
         } else {
-            Ok(&self.buffer)
+            Ok(&self.1)
         }
     }
 
@@ -164,7 +171,7 @@ impl Index {
         let mut error = InternalError::new();
         let num_tracks = unsafe {
             ffms2_sys::FFMS_GetFirstTrackOfType(
-                self.index,
+                self.0,
                 TrackType::ffms2_track_type(track_type) as i32,
                 error.as_mut_ptr(),
             )
@@ -183,7 +190,7 @@ impl Index {
         let mut error = InternalError::new();
         let num_tracks = unsafe {
             ffms2_sys::FFMS_GetFirstIndexedTrackOfType(
-                self.index,
+                self.0,
                 TrackType::ffms2_track_type(track_type) as i32,
                 error.as_mut_ptr(),
             )
@@ -197,34 +204,34 @@ impl Index {
 
     /// Returns the number of indexed tracks.
     pub fn tracks_count(&self) -> usize {
-        unsafe { ffms2_sys::FFMS_GetNumTracks(self.index) as usize }
+        unsafe { ffms2_sys::FFMS_GetNumTracks(self.0) as usize }
     }
 
     pub(crate) fn as_mut_ptr(&self) -> *mut ffms2_sys::FFMS_Index {
-        self.index
+        self.0
     }
 }
 
 impl Drop for Index {
     fn drop(&mut self) {
         unsafe {
-            if !self.buffer.is_empty() {
-                ffms2_sys::FFMS_FreeIndexBuffer(&mut self.buffer.as_mut_ptr());
+            if !self.1.is_empty() {
+                ffms2_sys::FFMS_FreeIndexBuffer(&mut self.1.as_mut_ptr());
             }
-            ffms2_sys::FFMS_DestroyIndex(self.index);
+            ffms2_sys::FFMS_DestroyIndex(self.0);
         }
     }
 }
 
-pub struct Indexer {
-    indexer: *mut ffms2_sys::FFMS_Indexer,
-}
+pub struct Indexer(*mut ffms2_sys::FFMS_Indexer);
 
 unsafe impl Send for Indexer {}
 
 impl Indexer {
     pub fn new(source_file: &Path) -> Result<Self> {
-        let source = CString::new(source_file.to_str().unwrap()).unwrap();
+        let source =
+            CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
+
         let mut error = InternalError::new();
         let indexer = unsafe {
             ffms2_sys::FFMS_CreateIndexer(source.as_ptr(), error.as_mut_ptr())
@@ -233,22 +240,23 @@ impl Indexer {
         if indexer.is_null() {
             Err(error.into())
         } else {
-            Ok(Indexer { indexer })
+            Ok(Indexer(indexer))
         }
     }
 
-    pub fn create_indexer_2(
+    pub fn with_demuxer_options(
         source_file: &Path,
         demuxer_options: HashMap<String, String>,
     ) -> Result<Self> {
-        let source = CString::new(source_file.to_str().unwrap()).unwrap();
+        let source =
+            CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
         let number_options = demuxer_options.len();
-        let demuxer_options_cstring = demuxer_options
-            .into_iter()
-            .map(|(key, value)| {
-                (CString::new(key).unwrap(), CString::new(value).unwrap())
-            })
-            .collect::<Vec<(CString, CString)>>();
+
+        let mut demuxer_options_cstring = Vec::new();
+        for (key, value) in demuxer_options.into_iter() {
+            demuxer_options_cstring
+                .push((CString::new(key)?, CString::new(value)?));
+        }
 
         let demuxer_keys_values = demuxer_options_cstring
             .iter()
@@ -259,7 +267,6 @@ impl Indexer {
             .collect::<Vec<ffms2_sys::FFMS_KeyValuePair>>();
 
         let mut error = InternalError::new();
-
         let indexer = unsafe {
             ffms2_sys::FFMS_CreateIndexer2(
                 source.as_ptr(),
@@ -272,38 +279,36 @@ impl Indexer {
         if indexer.is_null() {
             Err(error.into())
         } else {
-            Ok(Indexer { indexer })
+            Ok(Indexer(indexer))
         }
     }
 
-    pub fn codec_name(&self, track: usize) -> String {
-        let c_ptr = unsafe {
-            ffms2_sys::FFMS_GetCodecNameI(self.indexer, track as i32)
-        };
+    pub fn codec_name(&self, track: usize) -> Result<String> {
+        let c_ptr =
+            unsafe { ffms2_sys::FFMS_GetCodecNameI(self.0, track as i32) };
         let c_str = unsafe { CString::from_raw(c_ptr as *mut i8) };
-        c_str.to_str().unwrap().to_owned()
+        Ok(c_str.into_string()?)
     }
 
-    pub fn format_name(&self) -> String {
-        let c_ptr = unsafe { ffms2_sys::FFMS_GetFormatNameI(self.indexer) };
+    pub fn format_name(&self) -> Result<String> {
+        let c_ptr = unsafe { ffms2_sys::FFMS_GetFormatNameI(self.0) };
         let c_str = unsafe { CString::from_raw(c_ptr as *mut i8) };
-        c_str.to_str().unwrap().to_owned()
+        Ok(c_str.into_string()?)
     }
 
     pub fn tracks_count(&self) -> usize {
-        unsafe { ffms2_sys::FFMS_GetNumTracksI(self.indexer) as usize }
+        unsafe { ffms2_sys::FFMS_GetNumTracksI(self.0) as usize }
     }
 
     pub fn track_type(&self, track: usize) -> TrackType {
-        let track_type = unsafe {
-            ffms2_sys::FFMS_GetTrackTypeI(self.indexer, track as i32)
-        };
+        let track_type =
+            unsafe { ffms2_sys::FFMS_GetTrackTypeI(self.0, track as i32) };
         TrackType::new(track_type)
     }
 
     pub fn cancel_indexing(&self) {
         unsafe {
-            ffms2_sys::FFMS_CancelIndexing(self.indexer);
+            ffms2_sys::FFMS_CancelIndexing(self.0);
         }
     }
 
@@ -314,7 +319,7 @@ impl Indexer {
         let mut error = InternalError::new();
         let index = unsafe {
             ffms2_sys::FFMS_DoIndexing2(
-                self.indexer,
+                self.0,
                 IndexErrorHandling::ffms2_index_error_handling(error_handling)
                     as i32,
                 error.as_mut_ptr(),
@@ -324,17 +329,14 @@ impl Indexer {
         if index.is_null() {
             Err(error.into())
         } else {
-            Ok(Index {
-                index,
-                buffer: Vec::new(),
-            })
+            Ok(Index(index, Vec::new()))
         }
     }
 
     pub fn track_index_settings(&self, track: usize, index: usize) {
         unsafe {
             ffms2_sys::FFMS_TrackIndexSettings(
-                self.indexer,
+                self.0,
                 track as i32,
                 index as i32,
                 0,
@@ -349,7 +351,7 @@ impl Indexer {
     ) {
         unsafe {
             ffms2_sys::FFMS_TrackTypeIndexSettings(
-                self.indexer,
+                self.0,
                 TrackType::ffms2_track_type(track_type) as i32,
                 index as i32,
                 0,
@@ -386,13 +388,13 @@ impl Indexer {
 
             let res = panic::catch_unwind(closure);
 
-            if res.is_err() {
-                process::abort();
-            }
-
             Box::leak(user_data);
 
-            res.unwrap()
+            if let Ok(res) = res {
+                res
+            } else {
+                process::abort();
+            }
         }
 
         let ic_private = Box::new(CallbackData {
@@ -402,7 +404,7 @@ impl Indexer {
 
         unsafe {
             ffms2_sys::FFMS_SetProgressCallback(
-                self.indexer,
+                self.0,
                 Some(index_callback),
                 Box::into_raw(ic_private) as *mut c_void,
             )

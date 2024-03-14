@@ -118,9 +118,12 @@ pub enum Error {
     /// Failure in converting an operating system string into a str.
     #[error("str convervion error.")]
     StrConversion,
-    /// Failure in creating a C string.
-    #[error("Failed to create a C string")]
+    /// Failure in creating a CString.
+    #[error("Failed to create a CString")]
     CString(#[from] std::ffi::NulError),
+    /// Failure in converting a CString into a String.
+    #[error("Failed to convert a CString into a String")]
+    StringConversion(#[from] std::ffi::IntoStringError),
 }
 
 impl From<InternalError> for Error {
