@@ -400,15 +400,14 @@ impl Indexer {
                 ) as i32
             });
 
-            let res = panic::catch_unwind(closure);
+            let res = match panic::catch_unwind(closure) {
+                Ok(res) => res,
+                Err(_) => process::abort(),
+            };
 
             Box::leak(user_data);
 
-            if let Ok(res) = res {
-                res
-            } else {
-                process::abort();
-            }
+            res
         }
 
         let ic_private = Box::new(CallbackData {
