@@ -402,7 +402,10 @@ impl Indexer {
 
             let res = match panic::catch_unwind(closure) {
                 Ok(res) => res,
-                Err(_) => process::abort(),
+                Err(e) => {
+                    println!("Aborting the process because of the ffms2 callback error: {:?}", e);
+                    process::abort()
+                }
             };
 
             Box::leak(user_data);
