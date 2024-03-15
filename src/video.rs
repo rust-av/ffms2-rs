@@ -5,7 +5,7 @@ use ffms2_sys::{
     FFMS_ColorRanges, FFMS_SeekMode, FFMS_Stereo3DFlags, FFMS_VideoProperties,
 };
 
-use crate::error::{InternalError, Result};
+use crate::error::{Error, InternalError, Result};
 use crate::frame::Resizers;
 use crate::index::Index;
 
@@ -301,6 +301,7 @@ pub struct VideoSource(*mut ffms2_sys::FFMS_VideoSource);
 unsafe impl Send for VideoSource {}
 
 impl VideoSource {
+    /// Creates a new `[VideoSource]` instance.
     pub fn new(
         source_file: &Path,
         track: usize,
@@ -308,7 +309,9 @@ impl VideoSource {
         threads: usize,
         seek_mode: SeekMode,
     ) -> Result<Self> {
-        let source = CString::new(source_file.to_str().unwrap()).unwrap();
+        let source =
+            CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
+
         let mut error = InternalError::new();
         let video_source = unsafe {
             ffms2_sys::FFMS_CreateVideoSource(
@@ -328,6 +331,7 @@ impl VideoSource {
         }
     }
 
+    /// Returns the properties associated with a video source.
     pub fn video_properties(&self) -> VideoProperties {
         let video_prop = unsafe { ffms2_sys::FFMS_GetVideoProperties(self.0) };
         let ref_video = unsafe { &*video_prop };
@@ -335,6 +339,7 @@ impl VideoSource {
         VideoProperties(*ref_video)
     }
 
+    /// Sets frame format for input video source.
     pub fn set_input_format(
         &self,
         color_space: usize,
@@ -359,6 +364,7 @@ impl VideoSource {
         }
     }
 
+    /// Resets frame format for input video source.
     pub fn reset_input_format(&self) {
         unsafe {
             ffms2_sys::FFMS_ResetInputFormatV(self.0);

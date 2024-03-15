@@ -298,11 +298,11 @@ impl Frame {
         }
     }
 
-    pub fn pixel_format(name: &str) -> PixelFormat {
-        let source = CString::new(name).unwrap();
+    pub fn pixel_format(name: &str) -> Result<PixelFormat> {
+        let source = CString::new(name)?;
         let pixel_format =
             unsafe { ffms2_sys::FFMS_GetPixFmt(source.as_ptr()) };
-        PixelFormat::new(pixel_format)
+        Ok(PixelFormat::new(pixel_format))
     }
 
     pub fn dolby_vision_rpu(&self) -> &[u8] {
