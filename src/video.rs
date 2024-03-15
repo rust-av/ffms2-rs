@@ -50,7 +50,7 @@ pub enum SeekMode {
 }
 
 impl SeekMode {
-    pub(crate) const fn ffms2_seek_mode(self) -> FFMS_SeekMode {
+    const fn ffms2_seek_mode(self) -> FFMS_SeekMode {
         match self {
             Self::LinearNoRW => FFMS_SeekMode::FFMS_SEEK_LINEAR_NO_RW,
             Self::Linear => FFMS_SeekMode::FFMS_SEEK_LINEAR,
@@ -123,7 +123,7 @@ pub enum ColorRange {
 }
 
 impl ColorRange {
-    pub(crate) const fn ffms2_color_ranges(self) -> FFMS_ColorRanges {
+    const fn ffms2_color_ranges(self) -> FFMS_ColorRanges {
         match self {
             Self::Unspecified => FFMS_ColorRanges::FFMS_CR_UNSPECIFIED,
             Self::Mpeg => FFMS_ColorRanges::FFMS_CR_MPEG,
@@ -290,9 +290,13 @@ impl VideoProperties {
     }
 }
 
-pub struct VideoSource {
-    video_source: *mut ffms2_sys::FFMS_VideoSource,
-}
+/// Video source manager.
+///
+/// Among its functionalities:
+/// - Opening a video source
+/// - Retrieving video frames data
+/// - Setting the output video source data format
+pub struct VideoSource(*mut ffms2_sys::FFMS_VideoSource);
 
 unsafe impl Send for VideoSource {}
 
@@ -320,13 +324,12 @@ impl VideoSource {
         if video_source.is_null() {
             Err(error.into())
         } else {
-            Ok(VideoSource { video_source })
+            Ok(Self(video_source))
         }
     }
 
     pub fn video_properties(&self) -> VideoProperties {
-        let video_prop =
-            unsafe { ffms2_sys::FFMS_GetVideoProperties(self.video_source) };
+        let video_prop = unsafe { ffms2_sys::FFMS_GetVideoProperties(self.0) };
         let ref_video = unsafe { &*video_prop };
 
         VideoProperties(*ref_video)
@@ -341,7 +344,7 @@ impl VideoSource {
         let mut error = InternalError::new();
         let err = unsafe {
             ffms2_sys::FFMS_SetInputFormatV(
-                self.video_source,
+                self.0,
                 color_space as i32,
                 ColorRange::ffms2_color_ranges(color_range) as i32,
                 pixel_format as i32,
@@ -358,7 +361,7 @@ impl VideoSource {
 
     pub fn reset_input_format(&self) {
         unsafe {
-            ffms2_sys::FFMS_ResetInputFormatV(self.video_source);
+            ffms2_sys::FFMS_ResetInputFormatV(self.0);
         }
     }
 
@@ -373,7 +376,7 @@ impl VideoSource {
         target_formats.push(-1);
         let err = unsafe {
             ffms2_sys::FFMS_SetOutputFormatV2(
-                self.video_source,
+                self.0,
                 target_formats.as_ptr(),
                 width as i32,
                 height as i32,
@@ -392,19 +395,19 @@ impl VideoSource {
 
     pub fn reset_output_format(&self) {
         unsafe {
-            ffms2_sys::FFMS_ResetOutputFormatV(self.video_source);
+            ffms2_sys::FFMS_ResetOutputFormatV(self.0);
         }
     }
 
     pub(crate) fn as_mut_ptr(&mut self) -> *mut ffms2_sys::FFMS_VideoSource {
-        self.video_source
+        self.0
     }
 }
 
 impl Drop for VideoSource {
     fn drop(&mut self) {
         unsafe {
-            ffms2_sys::FFMS_DestroyVideoSource(self.video_source);
+            ffms2_sys::FFMS_DestroyVideoSource(self.0);
         }
     }
 }

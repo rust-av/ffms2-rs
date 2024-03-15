@@ -267,7 +267,7 @@ pub struct AudioProperties {
 /// Among its functionalities:
 /// - Opening an audio source
 /// - Retrieving audio samples data
-/// - Setting the output data format
+/// - Setting the output audio source data format
 pub struct AudioSource(*mut ffms2_sys::FFMS_AudioSource);
 
 unsafe impl Send for AudioSource {}
@@ -296,7 +296,7 @@ impl AudioSource {
         if audio_source.is_null() {
             Err(error.into())
         } else {
-            Ok(AudioSource(audio_source))
+            Ok(Self(audio_source))
         }
     }
 
@@ -329,7 +329,7 @@ impl AudioSource {
         if audio_source.is_null() {
             Err(error.into())
         } else {
-            Ok(AudioSource(audio_source))
+            Ok(Self(audio_source))
         }
     }
 
