@@ -383,7 +383,7 @@ impl AudioSource {
     /// Returns the `[ResampleOptions]` structure.
     pub fn resample_options(&self) -> ResampleOptions {
         let res_opt = unsafe { ffms2_sys::FFMS_CreateResampleOptions(self.0) };
-        let ref_res = unsafe { &*res_opt };
+        let ref_res = unsafe { *res_opt };
 
         ResampleOptions::new(ref_res)
     }

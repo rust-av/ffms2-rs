@@ -209,7 +209,7 @@ pub struct ResampleOptions {
 unsafe impl Send for ResampleOptions {}
 
 impl ResampleOptions {
-    pub(crate) fn new(resample: &FFMS_ResampleOptions) -> Self {
+    pub(crate) fn new(resample: FFMS_ResampleOptions) -> Self {
         Self {
             channel_layout: AudioChannel::channel_map(resample.ChannelLayout),
             sample_format: SampleFormat::new(resample.SampleFormat as usize),
@@ -234,7 +234,7 @@ impl ResampleOptions {
                 resample.KaiserBeta as usize,
             ),
             audio_dither_method: AudioDitherMethod::new(resample.DitherMethod),
-            ffms2_resample_options: *resample,
+            ffms2_resample_options: resample,
         }
     }
 
