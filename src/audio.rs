@@ -15,7 +15,7 @@ use crate::index::Index;
 use crate::resample::{ResampleOptions, SampleFormat};
 
 /// Audio channel layout of an audio stream.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AudioChannel {
     Unknown,
     /// Front left.
@@ -112,7 +112,7 @@ impl AudioChannel {
     ];
 
     pub(crate) fn channel_map(audio_channel: i64) -> Option<Vec<Self>> {
-        let audio_channels = Self::AUDIO_CHANNELS
+        let channels_map = Self::AUDIO_CHANNELS
             .iter()
             .flat_map(|(ffms2_channel, channel)| {
                 if audio_channel & *ffms2_channel as i64 == 1 {
@@ -123,7 +123,7 @@ impl AudioChannel {
             })
             .collect::<Vec<Self>>();
 
-        audio_channels.is_empty().then_some(audio_channels)
+        channels_map.is_empty().then_some(channels_map)
     }
 }
 
