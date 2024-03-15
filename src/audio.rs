@@ -125,6 +125,19 @@ impl AudioChannel {
 
         channels_map.is_empty().then_some(channels_map)
     }
+
+    pub(crate) fn into_ffms2(channels_map: Vec<Self>) -> i64 {
+        channels_map.iter().fold(0, |acc, audio_channel| {
+            if let Some(channel) = Self::AUDIO_CHANNELS
+                .iter()
+                .find(|(_, channel)| *audio_channel == *channel)
+            {
+                acc | channel.0 as i64
+            } else {
+                acc
+            }
+        })
+    }
 }
 
 /// Modes to manage audio with discontinuous timestamps.
@@ -213,7 +226,9 @@ impl AudioDelay {
 #[derive(Debug)]
 pub struct AudioProperties {
     /// Audio sample format.
-    pub sample_format: SampleFormat,
+    ///
+    /// If `None`, no sample format has been found.
+    pub sample_format: Option<SampleFormat>,
     /// Audio sample rate (samples/second).
     pub sample_rate: usize,
     /// The number of bits per audio sample.
@@ -390,19 +405,29 @@ impl AudioSource {
 
     /// Sets audio samples output format.
     pub fn output_format(&self, options: &ResampleOptions) -> Result<()> {
-        if options.channel_layout.is_none() {
-            return Err(Error::FFMS2(Cow::Borrowed("Unknown audio channel.")));
-        }
+        let channel_layout = match options.channel_layout {
+            Some(channel_layout) => channel_layout,
+            None => {
+                return Err(Error::FFMS2(Cow::Borrowed(
+                    "Unknown audio channel.",
+                )))
+            }
+        };
 
-        if matches!(options.sample_format, SampleFormat::Unknown) {
-            return Err(Error::FFMS2(Cow::Borrowed("Unknown sample format.")));
-        }
+        let sample_format = match options.sample_format {
+            Some(sample_format) => sample_format,
+            None => {
+                return Err(Error::FFMS2(Cow::Borrowed(
+                    "Unknown sample format.",
+                )))
+            }
+        };
 
         let mut error = InternalError::new();
         let err = unsafe {
             ffms2_sys::FFMS_SetOutputFormatA(
                 self.0,
-                options.as_ptr(),
+                options.into_ffms2(channel_layout, sample_format),
                 error.as_mut_ptr(),
             )
         };

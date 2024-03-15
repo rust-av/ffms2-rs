@@ -45,11 +45,8 @@ impl MatrixEncoding {
 }
 
 /// Audio sample formats.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub enum SampleFormat {
-    /// Unknown sample format.
-    #[default]
-    Unknown,
     /// One 8-bit unsigned integer per sample.
     U8,
     /// One 16-bit signed integer per sample.
@@ -63,14 +60,34 @@ pub enum SampleFormat {
 }
 
 impl SampleFormat {
-    pub(crate) const fn new(ffms2_sample_format: usize) -> Self {
+    pub(crate) const fn new(ffms2_sample_format: usize) -> Option<Self> {
         match ffms2_sample_format {
-            e if e == FFMS_SampleFormat::FFMS_FMT_U8 as usize => Self::U8,
-            e if e == FFMS_SampleFormat::FFMS_FMT_S16 as usize => Self::S16,
-            e if e == FFMS_SampleFormat::FFMS_FMT_S32 as usize => Self::S32,
-            e if e == FFMS_SampleFormat::FFMS_FMT_FLT as usize => Self::Flt,
-            e if e == FFMS_SampleFormat::FFMS_FMT_DBL as usize => Self::Dbl,
-            _ => Self::Unknown,
+            e if e == FFMS_SampleFormat::FFMS_FMT_U8 as usize => {
+                Some(Self::U8)
+            }
+            e if e == FFMS_SampleFormat::FFMS_FMT_S16 as usize => {
+                Some(Self::S16)
+            }
+            e if e == FFMS_SampleFormat::FFMS_FMT_S32 as usize => {
+                Some(Self::S32)
+            }
+            e if e == FFMS_SampleFormat::FFMS_FMT_FLT as usize => {
+                Some(Self::Flt)
+            }
+            e if e == FFMS_SampleFormat::FFMS_FMT_DBL as usize => {
+                Some(Self::Dbl)
+            }
+            _ => None,
+        }
+    }
+
+    const fn into_ffms2(&self) -> FFMS_SampleFormat {
+        match self {
+            Self::U8 => FFMS_SampleFormat::FFMS_FMT_U8,
+            Self::S16 => FFMS_SampleFormat::FFMS_FMT_S16,
+            Self::S32 => FFMS_SampleFormat::FFMS_FMT_S32,
+            Self::Flt => FFMS_SampleFormat::FFMS_FMT_FLT,
+            Self::Dbl => FFMS_SampleFormat::FFMS_FMT_DBL,
         }
     }
 }
@@ -164,7 +181,9 @@ pub struct ResampleOptions {
     /// If `None`, no channel layout has been found.
     pub channel_layout: Option<Vec<AudioChannel>>,
     /// Audio stream sample format.
-    pub sample_format: SampleFormat,
+    ///
+    /// If `None`, no sample format has been found.
+    pub sample_format: Option<SampleFormat>,
     /// Audio stream sample rate.
     pub sample_rate: usize,
     /// Channel mixing coefficient types.
@@ -203,7 +222,6 @@ pub struct ResampleOptions {
     pub filter_type: ResampleFilterType,
     /// Audio dither method.
     pub audio_dither_method: AudioDitherMethod,
-    pub(crate) ffms2_resample_options: FFMS_ResampleOptions,
 }
 
 unsafe impl Send for ResampleOptions {}
@@ -234,21 +252,26 @@ impl ResampleOptions {
                 resample.KaiserBeta as usize,
             ),
             audio_dither_method: AudioDitherMethod::new(resample.DitherMethod),
-            ffms2_resample_options: resample,
         }
     }
 
-    pub(crate) fn as_ptr(&self) -> *const FFMS_ResampleOptions {
-        &self.ffms2_resample_options
-    }
-}
-
-impl Drop for ResampleOptions {
-    fn drop(&mut self) {
-        let raw_resample =
-            Box::into_raw(Box::new(self.ffms2_resample_options));
-        unsafe {
-            ffms2_sys::FFMS_DestroyResampleOptions(raw_resample);
+    pub(crate) fn into_ffms2(
+        &self,
+        channel_layout: Vec<AudioChannel>,
+        sample_format: SampleFormat,
+    ) -> FFMS_ResampleOptions {
+        FFMS_ResampleOptions {
+            ChannelLayout: AudioChannel::into_ffms2(channel_layout),
+            SampleFormat: sample_format.into_ffms2(),
+            SampleRate: self.sample_rate as i32,
+            MixingCoefficientType: self.mixing_coefficient.into_ffms2(),
+            CenterMixLevel: self.center_mix_level,
+            SurroundMixLevel: self.surround_mix_level,
+            LFEMixLevel: self.lfe_mix_level,
+            Normalize: self.normalize as i32,
+            ForceResample: if self.force_resample { 1 } else { 0 },
+            ResampleFilterSize: self.filter_size as i32,
+            ResamplePhaseShift: self.phase_shift as i32,
         }
     }
 }
