@@ -126,7 +126,7 @@ impl AudioChannel {
         channels_map.is_empty().then_some(channels_map)
     }
 
-    pub(crate) fn into_ffms2(channels_map: Vec<Self>) -> i64 {
+    pub(crate) fn into_ffms2(channels_map: &[Self]) -> i64 {
         channels_map.iter().fold(0, |acc, audio_channel| {
             if let Some(channel) = Self::AUDIO_CHANNELS
                 .iter()
@@ -405,7 +405,7 @@ impl AudioSource {
 
     /// Sets audio samples output format.
     pub fn output_format(&self, options: &ResampleOptions) -> Result<()> {
-        let channel_layout = match options.channel_layout {
+        let channel_layout = match &options.channel_layout {
             Some(channel_layout) => channel_layout,
             None => {
                 return Err(Error::FFMS2(Cow::Borrowed(
@@ -427,7 +427,7 @@ impl AudioSource {
         let err = unsafe {
             ffms2_sys::FFMS_SetOutputFormatA(
                 self.0,
-                options.into_ffms2(channel_layout, sample_format),
+                &options.ffms2_resample(channel_layout, sample_format),
                 error.as_mut_ptr(),
             )
         };

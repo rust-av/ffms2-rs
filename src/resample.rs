@@ -30,16 +30,47 @@ pub enum MatrixEncoding {
 }
 
 impl MatrixEncoding {
-    pub(crate) const fn new(matrix_encoding: FFMS_MatrixEncoding) -> Self {
-        use ffms2_sys::FFMS_MatrixEncoding::*;
+    const fn new(matrix_encoding: FFMS_MatrixEncoding) -> Self {
         match matrix_encoding {
-            FFMS_MATRIX_ENCODING_NONE => Self::None,
-            FFMS_MATRIX_ENCODING_DOBLY => Self::Dolby,
-            FFMS_MATRIX_ENCODING_PRO_LOGIC_II => Self::ProLogicII,
-            FFMS_MATRIX_ENCODING_PRO_LOGIC_IIX => Self::ProLogicIIX,
-            FFMS_MATRIX_ENCODING_PRO_LOGIC_IIZ => Self::ProLogicIIZ,
-            FFMS_MATRIX_ENCODING_DOLBY_EX => Self::DolbyEx,
-            FFMS_MATRIX_ENCODING_DOLBY_HEADPHONE => Self::DolbyHeadphone,
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_NONE => Self::None,
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOBLY => Self::Dolby,
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_II => {
+                Self::ProLogicII
+            }
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_IIX => {
+                Self::ProLogicIIX
+            }
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_IIZ => {
+                Self::ProLogicIIZ
+            }
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOLBY_EX => {
+                Self::DolbyEx
+            }
+            FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOLBY_HEADPHONE => {
+                Self::DolbyHeadphone
+            }
+        }
+    }
+
+    const fn into_ffms2(self) -> FFMS_MatrixEncoding {
+        match self {
+            Self::None => FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_NONE,
+            Self::Dolby => FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOBLY,
+            Self::ProLogicII => {
+                FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_II
+            }
+            Self::ProLogicIIX => {
+                FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_IIX
+            }
+            Self::ProLogicIIZ => {
+                FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_PRO_LOGIC_IIZ
+            }
+            Self::DolbyEx => {
+                FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOLBY_EX
+            }
+            Self::DolbyHeadphone => {
+                FFMS_MatrixEncoding::FFMS_MATRIX_ENCODING_DOLBY_HEADPHONE
+            }
         }
     }
 }
@@ -81,7 +112,7 @@ impl SampleFormat {
         }
     }
 
-    const fn into_ffms2(&self) -> FFMS_SampleFormat {
+    const fn into_ffms2(self) -> FFMS_SampleFormat {
         match self {
             Self::U8 => FFMS_SampleFormat::FFMS_FMT_U8,
             Self::S16 => FFMS_SampleFormat::FFMS_FMT_S16,
@@ -120,6 +151,21 @@ impl ResampleFilterType {
             }
         }
     }
+
+    const fn into_ffms2(self) -> (i32, FFMS_ResampleFilterType) {
+        match self {
+            Self::Cubic => {
+                (0, FFMS_ResampleFilterType::FFMS_RESAMPLE_FILTER_CUBIC)
+            }
+            Self::Sinc => {
+                (0, FFMS_ResampleFilterType::FFMS_RESAMPLE_FILTER_SINC)
+            }
+            Self::Kaiser(kaiser_beta) => (
+                kaiser_beta as i32,
+                FFMS_ResampleFilterType::FFMS_RESAMPLE_FILTER_KAISER,
+            ),
+        }
+    }
 }
 
 /// Audio dither method.
@@ -147,6 +193,16 @@ impl AudioDitherMethod {
             FFMS_AudioDitherMethod::FFMS_RESAMPLE_DITHER_TRIANGULAR_NOISESHAPING => Self::TriangularNoiseShaping,
         }
     }
+
+    const fn into_ffms2(self) -> FFMS_AudioDitherMethod {
+        match self {
+            Self::None => FFMS_AudioDitherMethod::FFMS_RESAMPLE_DITHER_NONE,
+            Self::Rectangular => FFMS_AudioDitherMethod::FFMS_RESAMPLE_DITHER_RECTANGULAR,
+            Self::Triangular => FFMS_AudioDitherMethod::FFMS_RESAMPLE_DITHER_TRIANGULAR,
+            Self::TriangularHighPass => FFMS_AudioDitherMethod::FFMS_RESAMPLE_DITHER_TRIANGULAR_HIGHPASS,
+            Self::TriangularNoiseShaping => FFMS_AudioDitherMethod::FFMS_RESAMPLE_DITHER_TRIANGULAR_NOISESHAPING,
+        }
+    }
 }
 
 /// Channel Mixing Matrix Coefficient Types.
@@ -169,6 +225,18 @@ impl MixingCoefficientType {
             }
             FFMS_MixingCoefficientType::FFMS_MIXING_COEFFICIENT_FLT => {
                 Self::Flt
+            }
+        }
+    }
+
+    const fn into_ffms2(self) -> FFMS_MixingCoefficientType {
+        match self {
+            Self::Q8 => FFMS_MixingCoefficientType::FFMS_MIXING_COEFFICIENT_Q8,
+            Self::Q15 => {
+                FFMS_MixingCoefficientType::FFMS_MIXING_COEFFICIENT_Q15
+            }
+            Self::Flt => {
+                FFMS_MixingCoefficientType::FFMS_MIXING_COEFFICIENT_FLT
             }
         }
     }
@@ -255,16 +323,17 @@ impl ResampleOptions {
         }
     }
 
-    pub(crate) fn into_ffms2(
+    pub(crate) fn ffms2_resample(
         &self,
-        channel_layout: Vec<AudioChannel>,
+        channel_layout: &[AudioChannel],
         sample_format: SampleFormat,
     ) -> FFMS_ResampleOptions {
+        let (kaiser_beta, filter_type) = self.filter_type.into_ffms2();
         FFMS_ResampleOptions {
             ChannelLayout: AudioChannel::into_ffms2(channel_layout),
             SampleFormat: sample_format.into_ffms2(),
             SampleRate: self.sample_rate as i32,
-            MixingCoefficientType: self.mixing_coefficient.into_ffms2(),
+            MixingCoefficientType: self.mixing_coefficient_type.into_ffms2(),
             CenterMixLevel: self.center_mix_level,
             SurroundMixLevel: self.surround_mix_level,
             LFEMixLevel: self.lfe_mix_level,
@@ -272,6 +341,12 @@ impl ResampleOptions {
             ForceResample: if self.force_resample { 1 } else { 0 },
             ResampleFilterSize: self.filter_size as i32,
             ResamplePhaseShift: self.phase_shift as i32,
+            LinearInterpolation: if self.linear_interpolation { 1 } else { 0 },
+            CutoffFrequencyRatio: self.cutoff_frequency_ratio,
+            MatrixedStereoEncoding: self.matrix_stereo_encoding.into_ffms2(),
+            KaiserBeta: kaiser_beta,
+            FilterType: filter_type,
+            DitherMethod: self.audio_dither_method.into_ffms2(),
         }
     }
 }
