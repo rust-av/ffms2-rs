@@ -101,144 +101,42 @@ pub struct FrameResolution {
 }
 
 #[derive(Debug)]
-pub struct Frame(FFMS_Frame);
+pub struct Frame {
+    pub planes: Option<[Option<Vec<u8>>; PLANES_NUMBER]>,
+    pub linesize: [usize; PLANES_NUMBER],
+    pub resolution: FrameResolution,
+    pub encoded_width: usize,
+    pub encoded_height: usize,
+    pub encoded_pixel_format: PixelFormat,
+    pub scaled_width: usize,
+    pub scaled_height: usize,
+    pub converted_pixel_format: PixelFormat,
+    pub keyframe: usize,
+    pub repeat_picture: usize,
+    pub interlaced_frame: usize,
+    pub top_field_first: usize,
+    pub picture_type: u8,
+    pub color_space: usize,
+    pub color_range: ColorRange,
+    pub color_primaries: usize,
+    pub transfer_characteristics: usize,
+    pub chroma_location: ChromaLocation,
+    pub has_mastering_display_primaries: bool,
+    pub mastering_display_primaries_x: [f64; 3],
+    pub mastering_display_primaries_y: [f64; 3],
+    pub mastering_display_white_point_x: f64,
+    pub mastering_display_white_point_y: f64,
+    pub has_mastering_display_luminance: bool,
+    pub mastering_display_min_luminance: f64,
+    pub mastering_display_max_luminance: f64,
+    pub has_content_light_level: bool,
+    pub content_light_level_max: usize,
+    pub content_light_level_average: usize,
+    pub dolby_vision_rpu: Vec<u8>,
+    pub hdr_10_plus: Vec<u8>,
+}
 
 impl Frame {
-    pub const fn linesize(&self) -> [usize; PLANES_NUMBER] {
-        [
-            self.0.Linesize[0] as usize,
-            self.0.Linesize[1] as usize,
-            self.0.Linesize[2] as usize,
-            self.0.Linesize[3] as usize,
-        ]
-    }
-
-    pub const fn encoded_width(&self) -> usize {
-        self.0.EncodedWidth as usize
-    }
-
-    pub const fn encoded_height(&self) -> usize {
-        self.0.EncodedHeight as usize
-    }
-
-    pub const fn encoded_pixel_format(&self) -> PixelFormat {
-        PixelFormat::new(self.0.EncodedPixelFormat)
-    }
-
-    pub const fn scaled_width(&self) -> usize {
-        self.0.ScaledWidth as usize
-    }
-
-    pub const fn scaled_height(&self) -> usize {
-        self.0.ScaledHeight as usize
-    }
-
-    pub const fn converted_pixel_format(&self) -> PixelFormat {
-        PixelFormat::new(self.0.ConvertedPixelFormat)
-    }
-
-    pub const fn keyframe(&self) -> usize {
-        self.0.KeyFrame as usize
-    }
-
-    pub const fn repeat_picture(&self) -> usize {
-        self.0.RepeatPict as usize
-    }
-
-    pub const fn interlaced_frame(&self) -> usize {
-        self.0.InterlacedFrame as usize
-    }
-
-    pub const fn top_field_first(&self) -> usize {
-        self.0.TopFieldFirst as usize
-    }
-
-    pub const fn picture_type(&self) -> u8 {
-        self.0.PictType as u8
-    }
-
-    pub const fn colorspace(&self) -> usize {
-        self.0.ColorSpace as usize
-    }
-
-    pub const fn color_range(&self) -> ColorRange {
-        ColorRange::new(self.0.ColorRange)
-    }
-
-    pub const fn color_primaries(&self) -> usize {
-        self.0.ColorPrimaries as usize
-    }
-
-    pub const fn transfer_characteristics(&self) -> usize {
-        self.0.TransferCharateristics as usize
-    }
-
-    pub const fn chroma_location(&self) -> ChromaLocation {
-        ChromaLocation::new(self.0.ChromaLocation)
-    }
-
-    pub const fn has_mastering_display_primaries(&self) -> bool {
-        self.0.HasMasteringDisplayPrimaries > 0
-    }
-
-    pub const fn mastering_display_primaries_x(&self) -> [f64; 3] {
-        self.0.MasteringDisplayPrimariesX
-    }
-
-    pub const fn mastering_display_primaries_y(&self) -> [f64; 3] {
-        self.0.MasteringDisplayPrimariesY
-    }
-
-    pub const fn mastering_display_white_point_x(&self) -> f64 {
-        self.0.MasteringDisplayWhitePointX
-    }
-
-    pub const fn mastering_display_white_point_y(&self) -> f64 {
-        self.0.MasteringDisplayWhitePointY
-    }
-
-    pub const fn has_mastering_display_luminance(&self) -> bool {
-        self.0.HasMasteringDisplayLuminance > 0
-    }
-
-    pub const fn mastering_display_min_luminance(&self) -> f64 {
-        self.0.MasteringDisplayMinLuminance
-    }
-
-    pub const fn mastering_display_max_luminance(&self) -> f64 {
-        self.0.MasteringDisplayMaxLuminance
-    }
-
-    pub const fn has_content_light_level(&self) -> bool {
-        self.0.HasContentLightLevel > 0
-    }
-
-    pub const fn content_light_level_max(&self) -> u32 {
-        self.0.ContentLightLevelMax
-    }
-
-    pub const fn content_light_level_average(&self) -> u32 {
-        self.0.ContentLightLevelAverage
-    }
-
-    pub const fn frame_resolution(&self) -> FrameResolution {
-        let width = if self.0.ScaledWidth == -1 {
-            self.0.EncodedWidth
-        } else {
-            self.0.ScaledWidth
-        };
-        let height = if self.0.ScaledHeight == -1 {
-            self.0.EncodedHeight
-        } else {
-            self.0.ScaledHeight
-        };
-
-        FrameResolution {
-            width: width as usize,
-            height: height as usize,
-        }
-    }
-
     pub fn new(
         video_source: &mut VideoSource,
         frame_number: usize,
@@ -258,7 +156,7 @@ impl Frame {
         } else {
             let ref_frame = unsafe { &*ffms2_frame };
 
-            Ok(Self(*ref_frame))
+            Ok(Self::create_frame(*ref_frame))
         }
     }
 
@@ -281,7 +179,7 @@ impl Frame {
         } else {
             let ref_frame = unsafe { &*ffms2_frame };
 
-            Ok(Self(*ref_frame))
+            Ok(Self::create_frame(*ref_frame))
         }
     }
 
@@ -292,31 +190,89 @@ impl Frame {
         Ok(PixelFormat::new(pixel_format))
     }
 
-    pub fn dolby_vision_rpu(&self) -> &[u8] {
-        let rpu_slice = unsafe {
-            slice::from_raw_parts(
-                self.0.DolbyVisionRPU,
-                self.0.DolbyVisionRPUSize as usize,
-            )
-        };
-        rpu_slice
+    const fn linesize(frame: &FFMS_Frame) -> [usize; PLANES_NUMBER] {
+        [
+            frame.Linesize[0] as usize,
+            frame.Linesize[1] as usize,
+            frame.Linesize[2] as usize,
+            frame.Linesize[3] as usize,
+        ]
     }
 
-    pub fn hdr10_plus(&self) -> &[u8] {
-        let rpu_slice = unsafe {
-            slice::from_raw_parts(
-                self.0.HDR10Plus,
-                self.0.HDR10PlusSize as usize,
-            )
+    const fn frame_resolution(frame: &FFMS_Frame) -> FrameResolution {
+        let width = if frame.ScaledWidth == -1 {
+            frame.EncodedWidth
+        } else {
+            frame.ScaledWidth
         };
-        rpu_slice
+
+        let height = if frame.ScaledHeight == -1 {
+            frame.EncodedHeight
+        } else {
+            frame.ScaledHeight
+        };
+
+        FrameResolution {
+            width: width as usize,
+            height: height as usize,
+        }
     }
 
-    pub fn planes(&self) -> Option<[Option<&[u8]>; PLANES_NUMBER]> {
-        let mut planes: [Option<&[u8]>; PLANES_NUMBER] = Default::default();
+    fn create_frame(frame: FFMS_Frame) -> Self {
+        Self {
+            planes: Self::get_planes(&frame),
+            linesize: Self::linesize(&frame),
+            resolution: Self::frame_resolution(&frame),
+            encoded_width: frame.EncodedWidth as usize,
+            encoded_height: frame.EncodedHeight as usize,
+            encoded_pixel_format: PixelFormat::new(frame.EncodedPixelFormat),
+            scaled_width: frame.ScaledWidth as usize,
+            scaled_height: frame.ScaledHeight as usize,
+            converted_pixel_format: PixelFormat::new(
+                frame.ConvertedPixelFormat,
+            ),
+            keyframe: frame.KeyFrame as usize,
+            repeat_picture: frame.RepeatPict as usize,
+            interlaced_frame: frame.InterlacedFrame as usize,
+            top_field_first: frame.TopFieldFirst as usize,
+            picture_type: frame.PictType as u8,
+            color_space: frame.ColorSpace as usize,
+            color_range: ColorRange::new(frame.ColorRange),
+            color_primaries: frame.ColorPrimaries as usize,
+
+            transfer_characteristics: frame.TransferCharateristics as usize,
+
+            chroma_location: ChromaLocation::new(frame.ChromaLocation),
+            has_mastering_display_primaries: frame
+                .HasMasteringDisplayPrimaries
+                > 0,
+            mastering_display_primaries_x: frame.MasteringDisplayPrimariesX,
+            mastering_display_primaries_y: frame.MasteringDisplayPrimariesY,
+            mastering_display_white_point_x: frame.MasteringDisplayWhitePointX,
+            mastering_display_white_point_y: frame.MasteringDisplayWhitePointY,
+            has_mastering_display_luminance: frame
+                .HasMasteringDisplayLuminance
+                > 0,
+            mastering_display_min_luminance: frame
+                .MasteringDisplayMinLuminance,
+            mastering_display_max_luminance: frame
+                .MasteringDisplayMaxLuminance,
+            has_content_light_level: frame.HasContentLightLevel > 0,
+            content_light_level_max: frame.ContentLightLevelMax as usize,
+            content_light_level_average: frame.ContentLightLevelAverage
+                as usize,
+            dolby_vision_rpu: Self::dolby_vision_rpu(&frame),
+            hdr_10_plus: Self::hdr10_plus(&frame),
+        }
+    }
+
+    fn get_planes(
+        frame: &FFMS_Frame,
+    ) -> Option<[Option<Vec<u8>>; PLANES_NUMBER]> {
+        let mut planes: [Option<Vec<u8>>; PLANES_NUMBER] = Default::default();
 
         let log2_chroma_h =
-            match Self::i32_to_pixel_format(self.0.EncodedPixelFormat)
+            match Self::i32_to_pixel_format(frame.EncodedPixelFormat)
                 .descriptor()
             {
                 Some(pix_fmt_descriptor) => pix_fmt_descriptor.log2_chroma_h(),
@@ -325,7 +281,7 @@ impl Frame {
 
         for (i, (plane, (data, linesize))) in planes
             .iter_mut()
-            .zip(self.0.Data.into_iter().zip(self.0.Linesize.into_iter()))
+            .zip(frame.Data.into_iter().zip(frame.Linesize.into_iter()))
             .enumerate()
         {
             if linesize == 0 {
@@ -333,9 +289,10 @@ impl Frame {
             } else {
                 let sub_h = if i == 0 { 0 } else { log2_chroma_h };
                 let plane_slice_length =
-                    (linesize * self.0.EncodedHeight) >> sub_h;
+                    (linesize * frame.EncodedHeight) >> sub_h;
                 let plane_slice = unsafe {
                     slice::from_raw_parts(data, plane_slice_length as usize)
+                        .to_owned()
                 };
 
                 *plane = Some(plane_slice);
@@ -359,5 +316,25 @@ impl Frame {
         //    This is the best solution; we just gotta find someone to do it.
         let pix_fmt: AVPixelFormat = unsafe { mem::transmute(i32_pixel) };
         Pixel::from(pix_fmt)
+    }
+
+    fn dolby_vision_rpu(frame: &FFMS_Frame) -> Vec<u8> {
+        unsafe {
+            slice::from_raw_parts(
+                frame.DolbyVisionRPU,
+                frame.DolbyVisionRPUSize as usize,
+            )
+            .to_owned()
+        }
+    }
+
+    fn hdr10_plus(frame: &FFMS_Frame) -> Vec<u8> {
+        unsafe {
+            slice::from_raw_parts(
+                frame.HDR10Plus,
+                frame.HDR10PlusSize as usize,
+            )
+            .to_owned()
+        }
     }
 }
