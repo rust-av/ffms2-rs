@@ -1,9 +1,7 @@
 use std::ffi::CString;
 use std::path::Path;
 
-use ffms2_sys::{
-    FFMS_ColorRanges, FFMS_SeekMode, FFMS_Stereo3DFlags, FFMS_VideoProperties,
-};
+use ffms2_sys::{FFMS_ColorRanges, FFMS_SeekMode, FFMS_Stereo3DFlags};
 
 use crate::error::{Error, InternalError, Result};
 use crate::frame::Resizers;
@@ -152,142 +150,39 @@ pub enum Flip {
 }
 
 #[derive(Debug)]
-pub struct VideoProperties(FFMS_VideoProperties);
-
-impl VideoProperties {
-    pub const fn fps_numerator(&self) -> usize {
-        self.0.FPSNumerator as usize
-    }
-
-    pub const fn fps_denominator(&self) -> usize {
-        self.0.FPSDenominator as usize
-    }
-
-    pub const fn rff_numerator(&self) -> usize {
-        self.0.RFFNumerator as usize
-    }
-
-    pub const fn rff_denominator(&self) -> usize {
-        self.0.RFFDenominator as usize
-    }
-
-    pub const fn frames_count(&self) -> usize {
-        self.0.NumFrames as usize
-    }
-
-    pub const fn sar_numerator(&self) -> usize {
-        self.0.SARNum as usize
-    }
-
-    pub const fn sar_denominator(&self) -> usize {
-        self.0.SARDen as usize
-    }
-
-    pub const fn crop_top(&self) -> i32 {
-        self.0.CropTop
-    }
-
-    pub const fn crop_bottom(&self) -> i32 {
-        self.0.CropBottom
-    }
-
-    pub const fn crop_left(&self) -> i32 {
-        self.0.CropLeft
-    }
-
-    pub const fn crop_right(&self) -> i32 {
-        self.0.CropRight
-    }
-
-    pub const fn top_field_first(&self) -> i32 {
-        self.0.TopFieldFirst
-    }
-
-    pub const fn colorspace(&self) -> usize {
-        self.0.ColorSpace as usize
-    }
-
-    pub const fn color_range(&self) -> ColorRange {
-        ColorRange::new(self.0.ColorRange)
-    }
-
-    pub const fn first_time(&self) -> f64 {
-        self.0.FirstTime
-    }
-
-    pub const fn last_time(&self) -> f64 {
-        self.0.LastTime
-    }
-
-    pub const fn rotation(&self) -> i32 {
-        self.0.Rotation
-    }
-
-    pub const fn stereo3d_type(&self) -> Stereo3DType {
-        Stereo3DType::new(self.0.Stereo3DType)
-    }
-
-    pub const fn stereo3d_flags(&self) -> Stereo3DFlags {
-        Stereo3DFlags::new(self.0.Stereo3DFlags)
-    }
-
-    pub const fn last_end_time(&self) -> f64 {
-        self.0.LastEndTime
-    }
-
-    pub const fn has_mastering_display_primaries(&self) -> bool {
-        self.0.HasMasteringDisplayPrimaries > 0
-    }
-
-    pub const fn mastering_display_primaries_x(&self) -> [f64; 3] {
-        self.0.MasteringDisplayPrimariesX
-    }
-
-    pub const fn mastering_display_primaries_y(&self) -> [f64; 3] {
-        self.0.MasteringDisplayPrimariesY
-    }
-
-    pub const fn mastering_display_white_point_x(&self) -> f64 {
-        self.0.MasteringDisplayWhitePointX
-    }
-
-    pub const fn mastering_display_white_point_y(&self) -> f64 {
-        self.0.MasteringDisplayWhitePointY
-    }
-
-    pub const fn has_mastering_display_luminance(&self) -> bool {
-        self.0.HasMasteringDisplayLuminance > 0
-    }
-
-    pub const fn mastering_display_min_luminance(&self) -> f64 {
-        self.0.MasteringDisplayMinLuminance
-    }
-
-    pub const fn mastering_display_max_luminance(&self) -> f64 {
-        self.0.MasteringDisplayMaxLuminance
-    }
-
-    pub const fn has_content_light_level(&self) -> bool {
-        self.0.HasContentLightLevel > 0
-    }
-
-    pub const fn content_light_level_max(&self) -> u32 {
-        self.0.ContentLightLevelMax
-    }
-
-    pub const fn content_light_level_average(&self) -> u32 {
-        self.0.ContentLightLevelAverage
-    }
-
-    pub const fn flip(&self) -> Flip {
-        if self.0.Flip == -1 {
-            Flip::Vertical
-        } else if self.0.Flip == 1 {
-            Flip::Horizontal
-        } else {
-            Flip::Unknown
-        }
-    }
+pub struct VideoProperties {
+    pub fps_numerator: usize,
+    pub fps_denominator: usize,
+    pub rff_numerator: usize,
+    pub rff_denominator: usize,
+    pub frames_count: usize,
+    pub sar_numerator: usize,
+    pub sar_denominator: usize,
+    pub crop_top: i32,
+    pub crop_bottom: i32,
+    pub crop_left: i32,
+    pub crop_right: i32,
+    pub top_field_first: usize,
+    pub color_space: usize,
+    pub color_range: ColorRange,
+    pub first_time: f64,
+    pub last_time: f64,
+    pub rotation: usize,
+    pub stereo3d_type: Stereo3DType,
+    pub stereo3d_flags: Stereo3DFlags,
+    pub last_end_time: f64,
+    pub has_mastering_display_primaries: bool,
+    pub mastering_display_primaries_x: [f64; 3],
+    pub mastering_display_primaries_y: [f64; 3],
+    pub mastering_display_white_point_x: f64,
+    pub mastering_display_white_point_y: f64,
+    pub has_mastering_display_luminance: bool,
+    pub mastering_display_min_luminance: f64,
+    pub mastering_display_max_luminance: f64,
+    pub has_content_light_level: bool,
+    pub content_light_level_max: usize,
+    pub content_light_level_average: usize,
+    pub flip: Flip,
 }
 
 /// Video source manager.
@@ -334,9 +229,59 @@ impl VideoSource {
     /// Returns the properties associated with a video source.
     pub fn video_properties(&self) -> VideoProperties {
         let video_prop = unsafe { ffms2_sys::FFMS_GetVideoProperties(self.0) };
-        let ref_video = unsafe { &*video_prop };
+        let ref_video = unsafe { *video_prop };
 
-        VideoProperties(*ref_video)
+        VideoProperties {
+            fps_numerator: ref_video.FPSNumerator as usize,
+            fps_denominator: ref_video.FPSDenominator as usize,
+            rff_numerator: ref_video.RFFNumerator as usize,
+            rff_denominator: ref_video.RFFDenominator as usize,
+            frames_count: ref_video.NumFrames as usize,
+            sar_numerator: ref_video.SARNum as usize,
+            sar_denominator: ref_video.SARDen as usize,
+            crop_top: ref_video.CropTop,
+            crop_bottom: ref_video.CropBottom,
+            crop_left: ref_video.CropLeft,
+            crop_right: ref_video.CropRight,
+            top_field_first: ref_video.TopFieldFirst as usize,
+            color_space: ref_video.ColorSpace as usize,
+            color_range: ColorRange::new(ref_video.ColorRange),
+            first_time: ref_video.FirstTime,
+            last_time: ref_video.LastTime,
+            rotation: ref_video.Rotation as usize,
+            stereo3d_type: Stereo3DType::new(ref_video.Stereo3DType),
+            stereo3d_flags: Stereo3DFlags::new(ref_video.Stereo3DFlags),
+            last_end_time: ref_video.LastEndTime,
+            has_mastering_display_primaries: ref_video
+                .HasMasteringDisplayPrimaries
+                > 0,
+            mastering_display_primaries_x: ref_video
+                .MasteringDisplayPrimariesX,
+            mastering_display_primaries_y: ref_video
+                .MasteringDisplayPrimariesY,
+            mastering_display_white_point_x: ref_video
+                .MasteringDisplayWhitePointX,
+            mastering_display_white_point_y: ref_video
+                .MasteringDisplayWhitePointY,
+            has_mastering_display_luminance: ref_video
+                .HasMasteringDisplayLuminance
+                > 0,
+            mastering_display_min_luminance: ref_video
+                .MasteringDisplayMinLuminance,
+            mastering_display_max_luminance: ref_video
+                .MasteringDisplayMaxLuminance,
+            has_content_light_level: ref_video.HasContentLightLevel > 0,
+            content_light_level_max: ref_video.ContentLightLevelMax as usize,
+            content_light_level_average: ref_video.ContentLightLevelAverage
+                as usize,
+            flip: if ref_video.Flip == -1 {
+                Flip::Vertical
+            } else if ref_video.Flip == 1 {
+                Flip::Horizontal
+            } else {
+                Flip::Unknown
+            },
+        }
     }
 
     /// Sets frame format for input video source.
