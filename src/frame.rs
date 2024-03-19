@@ -76,44 +76,28 @@ impl ChromaLocation {
 }
 
 #[derive(Debug)]
-pub struct FrameInfo(FFMS_FrameInfo);
+pub struct FrameInfo {
+    pub pts: usize,
+    pub repeat_picture: usize,
+    pub keyframe: usize,
+    pub original_pts: usize,
+}
 
 impl FrameInfo {
-    pub const fn pts(&self) -> usize {
-        self.0.PTS as usize
-    }
-
-    pub const fn repeat_picture(&self) -> usize {
-        self.0.RepeatPict as usize
-    }
-
-    pub const fn keyframe(&self) -> usize {
-        self.0.KeyFrame as usize
-    }
-
-    pub const fn original_pts(&self) -> usize {
-        self.0.OriginalPTS as usize
-    }
-
-    pub(crate) fn new(frame_info: &FFMS_FrameInfo) -> Self {
-        FrameInfo(*frame_info)
+    pub(crate) fn new(frame_info: FFMS_FrameInfo) -> Self {
+        Self {
+            pts: frame_info.PTS as usize,
+            repeat_picture: frame_info.RepeatPict as usize,
+            keyframe: frame_info.KeyFrame as usize,
+            original_pts: frame_info.OriginalPTS as usize,
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct FrameResolution {
-    width: i32,
-    height: i32,
-}
-
-impl FrameResolution {
-    pub const fn width(&self) -> usize {
-        self.width as usize
-    }
-
-    pub const fn height(&self) -> usize {
-        self.height as usize
-    }
+    pub width: usize,
+    pub height: usize,
 }
 
 #[derive(Debug)]
@@ -249,7 +233,10 @@ impl Frame {
             self.0.ScaledHeight
         };
 
-        FrameResolution { width, height }
+        FrameResolution {
+            width: width as usize,
+            height: height as usize,
+        }
     }
 
     pub fn new(

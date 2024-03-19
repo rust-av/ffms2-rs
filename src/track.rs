@@ -156,7 +156,7 @@ impl Track {
     pub fn frame_info(&self, frame: usize) -> FrameInfo {
         let res_frame =
             unsafe { ffms2_sys::FFMS_GetFrameInfo(self.0, frame as i32) };
-        let ref_frame = unsafe { &*res_frame };
+        let ref_frame = unsafe { *res_frame };
         FrameInfo::new(ref_frame)
     }
 
