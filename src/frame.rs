@@ -115,7 +115,9 @@ pub struct Frame {
     pub interlaced_frame: usize,
     pub top_field_first: usize,
     pub picture_type: u8,
+    /// YUV color space for a video track.
     pub color_space: usize,
+    /// Valid range of luma values for a YUV video track.
     pub color_range: ColorRange,
     pub color_primaries: usize,
     pub transfer_characteristics: usize,

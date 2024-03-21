@@ -8,6 +8,7 @@ use ffms2_sys::{FFMS_ColorRanges, FFMS_SeekMode, FFMS_Stereo3DFlags};
 use crate::error::{Error, InternalError, Result};
 use crate::frame::Resizers;
 use crate::index::Index;
+use crate::pixel::PixelFormat;
 
 /// File seeking mode.
 ///
@@ -61,13 +62,13 @@ impl SeekMode {
     }
 }
 
-/// Pixel type format for a stereoscopic 3D video.
+/// Pixel type packaging for a stereoscopic 3D video source.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Stereo3DType {
     /// Unknown type.
     #[default]
     Unknown,
-    /// Not a stereoscopic video.
+    /// Not a stereoscopic video source.
     TwoDimensional,
     /// Video views are next to each other.
     ///
@@ -116,7 +117,7 @@ pub enum Stereo3DType {
     /// LLLLRRRR           L L L L  R R R R
     /// ```
     SideBySideQuincunx,
-    /// Views are packed per line, as if interlaced.
+    /// Video views are packed per line, as if interlaced.
     ///
     /// ```
     /// LLLLLLLL
@@ -125,7 +126,7 @@ pub enum Stereo3DType {
     /// ...
     /// ```
     Lines,
-    /// Views are packed per column.
+    /// Video views are packed per column.
     ///
     /// ```
     /// LRLRLRLR
@@ -157,7 +158,7 @@ impl Stereo3DType {
     }
 }
 
-/// Flags for a stereoscopic 3D video.
+/// Flags for a stereoscopic 3D video source.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Stereo3DFlags {
     /// Unknown flag.
@@ -180,7 +181,7 @@ impl Stereo3DFlags {
     }
 }
 
-/// Valid range of luma values for a YUV video stream.
+/// Valid range of luma values for a YUV video source.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum ColorRange {
     /// The range is not specified.
@@ -219,7 +220,7 @@ impl ColorRange {
     }
 }
 
-/// Flip direction to be applied before a rotation.
+/// Flip direction to be applied to a frame before a rotation.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Flip {
     /// No flip operation.
@@ -231,32 +232,32 @@ pub enum Flip {
     Vertical,
 }
 
-/// Frame rate associated with a video track.
+/// Frame rate associated with a video source.
 ///
 /// It is obtained dividing the numerator by the denominator field.
 ///
-/// For `Matroska` files, this rational number is based on the average frame
-/// duration of all frames, while, for everything else, it is based
-/// on the duration of the first frame.
+/// For `Matroska` video sources, this rational number is based on the
+/// average frame duration of all frames, while, for everything else,
+/// it is based on the duration of the first frame.
 ///
-/// This value should not be used to extrapolate wallclock timestamps
-/// for each frame, because it makes impossible to manage variable framerate
+/// This value should not be used to extrapolate clock timestamps
+/// for each frame, since it makes impossible to manage variable frame rates
 /// properly.
 ///
-/// This value are mostly useful for informational purposes and might
-/// be reliable for old containers formats such as AVI.
+/// This value is mostly useful for informational purposes and might
+/// be considered reliable for old containers formats such as AVI.
 ///
-/// It would be better to generate individual frame timestamps from
-/// `[Frame.pts]` instead of using this value.
+/// It would be better to generate individual frame timestamps based on
+/// the `[Frame.pts]` value instead of using this field.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct FrameRate {
-    /// Frame rate numerator associated with a track.
+    /// Frame rate numerator.
     pub numerator: usize,
-    /// Frame rate denominator associated with a track.
+    /// Frame rate denominator.
     pub denominator: usize,
 }
 
-/// Repeat First Field (RFF) timebase associated with a MPEG video track.
+/// Repeat First Field (RFF) timebase associated with a MPEG video source.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct RFFTimebase {
     /// RFF timebase numerator.
@@ -265,10 +266,10 @@ pub struct RFFTimebase {
     pub denominator: usize,
 }
 
-/// Sample aspect ratio associated with video track frames.
+/// Sample aspect ratio for video source frames.
 ///
-/// This value should be taken into account to compute the correct display
-/// aspect ratio for anamorphic video track.
+/// This value should be taken into account when computing the correct display
+/// aspect ratio for anamorphic video sources.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct SampleAspectRatio {
     /// Sample aspect ratio numerator.
@@ -280,8 +281,8 @@ pub struct SampleAspectRatio {
 /// The number of pixels in each direction (top, bottom, left, right)
 /// a frame should be cropped before displaying it.
 ///
-/// It is recommended to use this data whenever frames must be displayed
-/// in a correct way.
+/// It is recommended to use this metadata whenever frames must be displayed
+/// in an accurate way.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Crop {
     /// Top direction.
@@ -294,56 +295,73 @@ pub struct Crop {
     pub right: i32,
 }
 
-/// Video track metadata.
+/// Video source metadata.
 #[derive(Debug)]
 pub struct VideoProperties {
-    /// Frame rate associated with a video track.
+    /// Frame rate associated with a video source.
     pub frame_rate: FrameRate,
-    /// Repeat First Field (RFF) timebase associated with a MPEG video track.
+    /// Repeat First Field (RFF) timebase associated with a MPEG video source.
     pub rff_timebase: RFFTimebase,
-    /// Number of frames in a video track.
+    /// Number of frames in a video source.
     pub frames_count: usize,
-    /// Sample aspect ratio associated with video track frames.
+    /// Sample aspect ratio for video source frames.
     pub sar: SampleAspectRatio,
     /// The number of pixels a frame should be cropped in order to be displayed
     /// correctly.
     pub crop: Crop,
-    /// Whether a video track has the top field first, otherwise it has the
+    /// Whether a video source has the top field first, otherwise it has the
     /// bottom field first.
     pub top_field_first: bool,
-    /// YUV color space for a video track.
-    pub color_space: usize,
-    /// Valid range of luma values for a YUV video track.
-    pub color_range: ColorRange,
+    /// First timestamp of a video source in seconds.
+    ///
+    /// Useful to know whether a video source has a delay, or for quickly
+    /// determining its length in seconds.
     pub first_time: f64,
+    /// Last timestamp of a video source in seconds.
+    ///
+    /// Useful to know whether a video source has a delay, or for quickly
+    /// determining its length in seconds.
     pub last_time: f64,
+    /// Video source rotation in degrees.
     pub rotation: usize,
-    /// Pixel type format for a stereoscopic 3D video.
+    /// Pixel type format for a stereoscopic 3D video source.
     pub stereo3d_type: Stereo3DType,
-    /// Flags for a stereoscopic 3D video.
+    /// Flags for a stereoscopic 3D video source.
     pub stereo3d_flags: Stereo3DFlags,
+    /// The end time of the last packet of a video source in milliseconds.
     pub last_end_time: f64,
+    /// Whether a mastering display has primaries coordinates.
     pub has_mastering_display_primaries: bool,
+    /// RGB chromaticity x-coordinates of a mastering display.
     pub mastering_display_primaries_x: [f64; 3],
+    /// RGB chromaticity y-coordinates of a mastering display.
     pub mastering_display_primaries_y: [f64; 3],
+    /// White point x-coordinate of a mastering display.
     pub mastering_display_white_point_x: f64,
+    /// White point y-coordinate of a mastering display.
     pub mastering_display_white_point_y: f64,
+    /// Whether a mastering display has luminance values.
     pub has_mastering_display_luminance: bool,
+    /// Minimum luminance a mastering display in cd/m^2.
     pub mastering_display_min_luminance: f64,
+    /// Maximum luminance of a mastering display in cd/m^2.
     pub mastering_display_max_luminance: f64,
+    /// Whether a video source has light level values.
     pub has_content_light_level: bool,
+    /// Maximum video source luminance in cd/m^2.
     pub content_light_level_max: usize,
+    /// Average video source luminance in cd/m^2.
     pub content_light_level_average: usize,
-    /// Flip direction to be applied before a rotation.
+    /// Flip direction to be applied to a frame before a rotation.
     pub flip: Flip,
 }
 
 /// Video source manager.
 ///
 /// Among its functionalities:
-/// - Opening a video source
+/// - Opening a video source which must be indexed first through `[Index]`
 /// - Retrieving video frames data
-/// - Setting the output video source data format
+/// - Setting data format for an output video source
 pub struct VideoSource(*mut ffms2_sys::FFMS_VideoSource);
 
 unsafe impl Send for VideoSource {}
@@ -379,7 +397,7 @@ impl VideoSource {
         }
     }
 
-    /// Returns the properties associated with a video source.
+    /// Returns all video source properties.
     pub fn video_properties(&self) -> VideoProperties {
         let video_prop = unsafe { ffms2_sys::FFMS_GetVideoProperties(self.0) };
         let ref_video = unsafe { *video_prop };
@@ -405,8 +423,6 @@ impl VideoSource {
                 right: ref_video.CropRight,
             },
             top_field_first: ref_video.TopFieldFirst > 0,
-            color_space: ref_video.ColorSpace as usize,
-            color_range: ColorRange::new(ref_video.ColorRange),
             first_time: ref_video.FirstTime,
             last_time: ref_video.LastTime,
             rotation: ref_video.Rotation as usize,
@@ -443,7 +459,16 @@ impl VideoSource {
         }
     }
 
-    /// Sets frame format for input video source.
+    /// Overrides the video source color space.
+    ///
+    /// This method is intended primarily for compatibility with programs which
+    /// use the wrong YUV color space when converting to or from RGB, but it can
+    /// also be useful for files which have incorrect color space flags.
+    ///
+    /// Values passed to this functions are not checked for sanity.
+    /// For example, RGB files can be treated as if they are actually YUV files
+    /// using this method, but even if this approach works, it does not produce
+    /// useful results.
     pub fn set_input_format(
         &self,
         color_space: usize,
@@ -468,33 +493,44 @@ impl VideoSource {
         }
     }
 
-    /// Resets frame format for input video source.
+    /// Resets the input format to the values specified in the video source
+    /// file.
     pub fn reset_input_format(&self) {
         unsafe {
             ffms2_sys::FFMS_ResetInputFormatV(self.0);
         }
     }
 
-    pub fn set_output_format_v2(
+    /// Sets the color space and frame dimensions to be used for
+    /// output video source frames.
+    /// For example, tt can be used to convert a video source to
+    /// greyscale or monochrome.
+    pub fn set_output_format(
         &self,
-        target_formats: &mut Vec<i32>,
+        colorspaces: &[PixelFormat],
         width: usize,
         height: usize,
         resizer: Resizers,
     ) -> Result<()> {
         let mut error = InternalError::new();
-        target_formats.push(-1);
+
+        let mut colorspaces = colorspaces
+            .into_iter()
+            .map(|colorspace| *colorspace as i32)
+            .collect::<Vec<i32>>();
+
+        colorspaces.push(-1);
+
         let err = unsafe {
             ffms2_sys::FFMS_SetOutputFormatV2(
                 self.0,
-                target_formats.as_ptr(),
+                colorspaces.as_ptr(),
                 width as i32,
                 height as i32,
                 Resizers::ffms2_resizer(resizer) as i32,
                 error.as_mut_ptr(),
             )
         };
-        target_formats.pop();
 
         if err != 0 {
             Err(error.into())
@@ -503,6 +539,11 @@ impl VideoSource {
         }
     }
 
+    /// Resets the output format for a video source so that no conversion
+    /// is applied.
+    ///
+    /// Note that the results of this function may vary wildly, particularly
+    /// whether a video source changes its resolution in the middle.
     pub fn reset_output_format(&self) {
         unsafe {
             ffms2_sys::FFMS_ResetOutputFormatV(self.0);
