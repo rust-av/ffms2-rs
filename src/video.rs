@@ -330,27 +330,43 @@ pub struct VideoProperties {
     pub stereo3d_flags: Stereo3DFlags,
     /// The end time of the last packet of a video source in milliseconds.
     pub last_end_time: f64,
-    /// Whether a mastering display has primaries coordinates.
+    /// Whether the color primaries coordinates of the display used to master a
+    /// video source content are accessible.
+    ///
+    /// A receiver can use this metadata to determine whether a video source
+    /// content could contain colors or light levels which cannot be reproduced
+    /// by the current display.
     pub has_mastering_display_primaries: bool,
-    /// RGB chromaticity x-coordinates of a mastering display.
+    /// RGB chromaticity x-coordinates of the display used to master a
+    /// video source content.
     pub mastering_display_primaries_x: [f64; 3],
-    /// RGB chromaticity y-coordinates of a mastering display.
+    /// RGB chromaticity y-coordinates of the display used to master a
+    /// video source content.
     pub mastering_display_primaries_y: [f64; 3],
-    /// White point x-coordinate of a mastering display.
+    /// White point x-coordinate of the display used to master a
+    /// video source content.
     pub mastering_display_white_point_x: f64,
-    /// White point y-coordinate of a mastering display.
+    /// White point y-coordinate of the display used to master a
+    /// video source content.
     pub mastering_display_white_point_y: f64,
-    /// Whether a mastering display has luminance values.
+    /// Whether the luminance values of the display used to master a video
+    /// source content are accessible.
     pub has_mastering_display_luminance: bool,
-    /// Minimum luminance a mastering display in cd/m^2.
+    /// Minimum luminance of the display used to master a video
+    /// source content in cd/m^2.
     pub mastering_display_min_luminance: f64,
-    /// Maximum luminance of a mastering display in cd/m^2.
+    /// Maximum luminance of the display used to master a video
+    /// source content in cd/m^2.
     pub mastering_display_max_luminance: f64,
-    /// Whether a video source has light level values.
+    /// Whether a video source content has maximum and average light levels.
+    /// Both of these values are measured over the duration of the content.
+    ///
+    /// A receiver can use this information to adjust the content light
+    /// levels so that they match the capability of the current display.
     pub has_content_light_level: bool,
-    /// Maximum video source luminance in cd/m^2.
+    /// Maximum light level of a video source content in cd/m^2.
     pub content_light_level_max: usize,
-    /// Average video source luminance in cd/m^2.
+    /// Average light level of a video source content in cd/m^2.
     pub content_light_level_average: usize,
     /// Flip direction to be applied to a frame before a rotation.
     pub flip: Flip,
