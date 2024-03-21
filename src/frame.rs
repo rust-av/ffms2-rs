@@ -102,7 +102,6 @@ pub struct FrameResolution {
 
 #[derive(Debug)]
 pub struct Frame {
-    pub planes: Option<[Option<Vec<u8>>; PLANES_NUMBER]>,
     pub linesize: [usize; PLANES_NUMBER],
     pub resolution: FrameResolution,
     pub encoded_width: usize,
@@ -132,8 +131,7 @@ pub struct Frame {
     pub has_content_light_level: bool,
     pub content_light_level_max: usize,
     pub content_light_level_average: usize,
-    pub dolby_vision_rpu: Vec<u8>,
-    pub hdr_10_plus: Vec<u8>,
+    frame: FFMS_Frame,
 }
 
 impl Frame {
@@ -190,6 +188,62 @@ impl Frame {
         Ok(PixelFormat::new(pixel_format))
     }
 
+    pub fn planes(&self) -> Option<[Option<&[u8]>; PLANES_NUMBER]> {
+        let mut planes: [Option<&[u8]>; PLANES_NUMBER] = Default::default();
+
+        let log2_chroma_h =
+            match Self::i32_to_pixel_format(self.frame.EncodedPixelFormat)
+                .descriptor()
+            {
+                Some(pix_fmt_descriptor) => pix_fmt_descriptor.log2_chroma_h(),
+                None => return None,
+            };
+
+        for (i, (plane, (data, linesize))) in planes
+            .iter_mut()
+            .zip(
+                self.frame
+                    .Data
+                    .into_iter()
+                    .zip(self.frame.Linesize.into_iter()),
+            )
+            .enumerate()
+        {
+            if linesize == 0 {
+                *plane = None;
+            } else {
+                let sub_h = if i == 0 { 0 } else { log2_chroma_h };
+                let plane_slice_length =
+                    (linesize * self.frame.EncodedHeight) >> sub_h;
+                let plane_slice = unsafe {
+                    slice::from_raw_parts(data, plane_slice_length as usize)
+                };
+
+                *plane = Some(plane_slice);
+            }
+        }
+
+        Some(planes)
+    }
+
+    pub fn dolby_vision_rpu(&self) -> &[u8] {
+        unsafe {
+            slice::from_raw_parts(
+                self.frame.DolbyVisionRPU,
+                self.frame.DolbyVisionRPUSize as usize,
+            )
+        }
+    }
+
+    pub fn hdr10_plus(&self) -> &[u8] {
+        unsafe {
+            slice::from_raw_parts(
+                self.frame.HDR10Plus,
+                self.frame.HDR10PlusSize as usize,
+            )
+        }
+    }
+
     const fn linesize(frame: &FFMS_Frame) -> [usize; PLANES_NUMBER] {
         [
             frame.Linesize[0] as usize,
@@ -218,9 +272,8 @@ impl Frame {
         }
     }
 
-    fn create_frame(frame: FFMS_Frame) -> Self {
+    const fn create_frame(frame: FFMS_Frame) -> Self {
         Self {
-            planes: Self::get_planes(&frame),
             linesize: Self::linesize(&frame),
             resolution: Self::frame_resolution(&frame),
             encoded_width: frame.EncodedWidth as usize,
@@ -261,45 +314,8 @@ impl Frame {
             content_light_level_max: frame.ContentLightLevelMax as usize,
             content_light_level_average: frame.ContentLightLevelAverage
                 as usize,
-            dolby_vision_rpu: Self::dolby_vision_rpu(&frame),
-            hdr_10_plus: Self::hdr10_plus(&frame),
+            frame,
         }
-    }
-
-    fn get_planes(
-        frame: &FFMS_Frame,
-    ) -> Option<[Option<Vec<u8>>; PLANES_NUMBER]> {
-        let mut planes: [Option<Vec<u8>>; PLANES_NUMBER] = Default::default();
-
-        let log2_chroma_h =
-            match Self::i32_to_pixel_format(frame.EncodedPixelFormat)
-                .descriptor()
-            {
-                Some(pix_fmt_descriptor) => pix_fmt_descriptor.log2_chroma_h(),
-                None => return None,
-            };
-
-        for (i, (plane, (data, linesize))) in planes
-            .iter_mut()
-            .zip(frame.Data.into_iter().zip(frame.Linesize.into_iter()))
-            .enumerate()
-        {
-            if linesize == 0 {
-                *plane = None;
-            } else {
-                let sub_h = if i == 0 { 0 } else { log2_chroma_h };
-                let plane_slice_length =
-                    (linesize * frame.EncodedHeight) >> sub_h;
-                let plane_slice = unsafe {
-                    slice::from_raw_parts(data, plane_slice_length as usize)
-                        .to_owned()
-                };
-
-                *plane = Some(plane_slice);
-            }
-        }
-
-        Some(planes)
     }
 
     fn i32_to_pixel_format(i32_pixel: i32) -> Pixel {
@@ -316,25 +332,5 @@ impl Frame {
         //    This is the best solution; we just gotta find someone to do it.
         let pix_fmt: AVPixelFormat = unsafe { mem::transmute(i32_pixel) };
         Pixel::from(pix_fmt)
-    }
-
-    fn dolby_vision_rpu(frame: &FFMS_Frame) -> Vec<u8> {
-        unsafe {
-            slice::from_raw_parts(
-                frame.DolbyVisionRPU,
-                frame.DolbyVisionRPUSize as usize,
-            )
-            .to_owned()
-        }
-    }
-
-    fn hdr10_plus(frame: &FFMS_Frame) -> Vec<u8> {
-        unsafe {
-            slice::from_raw_parts(
-                frame.HDR10Plus,
-                frame.HDR10PlusSize as usize,
-            )
-            .to_owned()
-        }
     }
 }
