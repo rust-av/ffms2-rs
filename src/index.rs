@@ -13,7 +13,8 @@ use ffms2_sys::FFMS_IndexErrorHandling;
 use crate::error::{Error, InternalError, Result};
 use crate::track::TrackType;
 
-/// Decision mode when a decoding error is encountered during indexing.
+/// Decision method adopted when a decoding error occurs during
+/// a media file indexing.
 #[derive(Clone, Copy, Debug)]
 pub enum IndexErrorHandling {
     /// Abort the indexing operation and raise an error.
@@ -64,12 +65,23 @@ impl fmt::Display for IndexErrorHandling {
     }
 }
 
+/// An indexing information manager.
+///
+/// It provides a series of methods to interact with an index file.
+/// Among the functionalities:
+/// - Reading and writing the content of the file
+/// - Extract indexing information starting from tracks given as input.
 pub struct Index(*mut ffms2_sys::FFMS_Index, Vec<u8>);
 
 unsafe impl Send for Index {}
 
 impl Index {
-    /// Creates a new `[Index]` from the filepath passed as input.
+    /// Creates a new `[Index]` instance from a given index file saved on disk,
+    /// which can be an absolute or a relative path.
+    ///
+    /// Note that index files can only be read by the exact `ffms2' version
+    /// as they were written with. Attempting to open an index file written with
+    /// a different `ffsm2` version produces an index mismatch error.
     pub fn new(index_file: &Path) -> Result<Self> {
         let source =
             CString::new(index_file.to_str().ok_or(Error::StrConversion)?)?;
@@ -85,12 +97,18 @@ impl Index {
         }
     }
 
-    pub fn error_handling(&self) -> IndexErrorHandling {
+    /// Returns the index error passed as input to the `[do_indexing]`
+    /// function.
+    ///
+    /// This kind of error might occur during the construction of an index
+    /// file made by an `[Indexer]`.
+    pub fn indexer_error(&self) -> IndexErrorHandling {
         let index_error_handling =
             unsafe { ffms2_sys::FFMS_GetErrorHandling(self.0) };
         IndexErrorHandling::new(index_error_handling)
     }
 
+    /// Creates a new `[Index]` instance from a memory bytes buffer.
     pub fn from_buffer(buffer: &[u8]) -> Result<Self> {
         let mut error = InternalError::new();
         let size = mem::size_of_val(buffer);
@@ -109,7 +127,17 @@ impl Index {
         }
     }
 
-    pub fn belongs_to_file(&self, source_file: &Path) -> Result<()> {
+    /// Makes an heuristic, quite reliable, to guess whether an index belongs
+    /// to a given source file.
+    ///
+    /// This method is useful to determine if the index object is actually
+    /// relevant, since the only two ways to pair up an index file to a source
+    /// file are:
+    ///
+    /// - Trust whoever provided the two files
+    /// - Comparing the two filenames, which is usually a not very reliable
+    ///   operation.
+    pub fn belongs_to_file(&self, source_file: &Path) -> Result<bool> {
         let source =
             CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
         let mut error = InternalError::new();
@@ -124,10 +152,19 @@ impl Index {
         if err != 0 {
             Err(error.into())
         } else {
-            Ok(())
+            Ok(true)
         }
     }
 
+    /// Writes the indexing information to a given index file, which can
+    /// be an absolute or a relative path.
+    ///
+    /// If the index file already exists, it will be truncated and overwritten.
+    ///
+    /// Saving indexing information in a file avoids re-indexing
+    /// a media file every time. This operation can be particularly time-saving
+    /// with very large files or with those files containing a lot of
+    /// audio tracks, since both of them can take quite a lot to index.
     pub fn write_to_file(&self, source_file: &Path) -> Result<()> {
         let source =
             CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
@@ -148,6 +185,7 @@ impl Index {
         }
     }
 
+    /// Writes the indexing information to a memory bytes buffer.
     pub fn write_to_buffer(&mut self) -> Result<&Vec<u8>> {
         let mut error = InternalError::new();
         let mut size = 0;
@@ -167,7 +205,9 @@ impl Index {
         }
     }
 
-    pub fn first_track_of_type(&self, track_type: TrackType) -> Result<usize> {
+    /// Finds the first track of the type passed as input and
+    /// returns its track number.
+    pub fn first_track_type(&self, track_type: TrackType) -> Result<usize> {
         let mut error = InternalError::new();
         let num_tracks = unsafe {
             ffms2_sys::FFMS_GetFirstTrackOfType(
@@ -183,7 +223,11 @@ impl Index {
         }
     }
 
-    pub fn first_indexed_track_of_type(
+    /// Finds the first indexed track of the type passed as input and
+    /// returns its track number.
+    ///
+    /// This method ignores the tracks which have not been indexed.
+    pub fn first_indexed_track_type(
         &self,
         track_type: TrackType,
     ) -> Result<usize> {
@@ -202,7 +246,7 @@ impl Index {
         }
     }
 
-    /// Returns the number of indexed tracks.
+    /// Returns the number of tracks contained in a given index file.
     pub fn tracks_count(&self) -> usize {
         unsafe { ffms2_sys::FFMS_GetNumTracks(self.0) as usize }
     }
@@ -223,11 +267,26 @@ impl Drop for Index {
     }
 }
 
+/// An indexer manager.
+///
+/// Before opening a media file, it is **necessary** to index its content.
+///
+/// An indexer ensures that keyframe positions, timecode data, and
+/// other information are known in advance, so that a frame-accurate seeking
+/// can be done in an easy way.
+///
+/// An indexer also provides a series of methods to query for information about
+/// a media file.
 pub struct Indexer(*mut ffms2_sys::FFMS_Indexer);
 
 unsafe impl Send for Indexer {}
 
 impl Indexer {
+    /// Creates a new `[Indexer]` from a given media file, which can be an
+    /// absolute or a relative path.
+    ///
+    /// By default, all video tracks present in a media file are indexed,
+    /// while all audio tracks are not.
     pub fn new(source_file: &Path) -> Result<Self> {
         let source =
             CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
@@ -244,6 +303,11 @@ impl Indexer {
         }
     }
 
+    /// Creates a new `[Indexer]` from a given media file. The indexing process
+    /// can be controlled through the demuxing options described as a
+    /// key-value pairs.
+    ///
+    /// The media file path can be absolute or relative.
     pub fn with_demuxer_options(
         source_file: &Path,
         demuxer_options: HashMap<String, String>,
@@ -283,37 +347,72 @@ impl Indexer {
         }
     }
 
+    /// Returns the human-readable codec name of the given track number
+    /// contained in the indexed media file.
+    ///
+    /// Returns an error when a wrong track number is passed.
     pub fn codec_name(&self, track: usize) -> Result<String> {
+        if track > self.tracks_count() - 1 {
+            return Err(Error::WrongTrack);
+        }
+
         let c_ptr =
             unsafe { ffms2_sys::FFMS_GetCodecNameI(self.0, track as i32) };
         let c_str = unsafe { CString::from_raw(c_ptr as *mut i8) };
         Ok(c_str.into_string()?)
     }
 
+    /// Returns the human-readable container format name contained in the
+    /// indexed media file.
     pub fn format_name(&self) -> Result<String> {
         let c_ptr = unsafe { ffms2_sys::FFMS_GetFormatNameI(self.0) };
         let c_str = unsafe { CString::from_raw(c_ptr as *mut i8) };
         Ok(c_str.into_string()?)
     }
 
+    /// Returns the total number of tracks contained in the indexed media file.
+    ///
+    /// Differently from `[Index.tracks_count]`, it does not require indexing
+    /// the entire media file first.
     pub fn tracks_count(&self) -> usize {
         unsafe { ffms2_sys::FFMS_GetNumTracksI(self.0) as usize }
     }
 
-    pub fn track_type(&self, track: usize) -> TrackType {
+    /// Returns the track type associated with the input track number.
+    ///
+    /// Differently from `[Index.track_type]`, it does not require indexing
+    /// the entire media file first.
+    ///
+    /// If an indexed file has already been created, it is recommended to use
+    /// the `[Index.track_type]` method, since the indexer is destructed when a
+    /// a new `[Index]` instance is created.
+    ///
+    /// Returns an error when a wrong track number is passed.
+    pub fn track_type(&self, track: usize) -> Result<TrackType> {
+        if track > self.tracks_count() - 1 {
+            return Err(Error::WrongTrack);
+        }
+
         let track_type =
             unsafe { ffms2_sys::FFMS_GetTrackTypeI(self.0, track as i32) };
-        TrackType::new(track_type)
+        Ok(TrackType::new(track_type))
     }
 
-    /// Cancels the indexing process.
+    /// Stops the indexing process and destroys the indexer.
+    ///
+    /// This method should be used when there is no longer any interest in
+    /// further additional tracks than the ones which have already been indexed.
     pub fn cancel(&self) {
         unsafe {
             ffms2_sys::FFMS_CancelIndexing(self.0);
         }
     }
 
-    pub fn do_indexing2(
+    /// Runs the actual indexing process.
+    ///
+    /// This function destroys the `[Indexer]` and frees the allocated memory,
+    /// even when the indexing process fails for any reason.
+    pub fn do_indexing(
         &self,
         error_handling: IndexErrorHandling,
     ) -> Result<Index> {
@@ -334,30 +433,84 @@ impl Indexer {
         }
     }
 
-    pub fn track_index_settings(&self, track: usize, index: usize) {
-        unsafe {
-            ffms2_sys::FFMS_TrackIndexSettings(
-                self.0,
-                track as i32,
-                index as i32,
-                0,
-            );
+    /// Enables the indexing process for the given track number.
+    ///
+    /// If an audio track is passed as input, it enables dumping the decoded
+    /// audio during the indexing process.
+    ///
+    /// Returns an error when a wrong track number is passed.
+    pub fn enable_track(self, track: usize) -> Result<Self> {
+        if track > self.tracks_count() - 1 {
+            return Err(Error::WrongTrack);
         }
+
+        unsafe {
+            ffms2_sys::FFMS_TrackIndexSettings(self.0, track as i32, 1, 0);
+        }
+        Ok(self)
     }
 
-    pub fn track_type_index_settings(
-        &self,
-        track_type: TrackType,
-        index: usize,
-    ) {
+    /// Disables the indexing process for the given track number.
+    ///
+    /// If an audio track is passed as input, it disables dumping the decoded
+    /// audio during the indexing process.
+    ///
+    /// Returns an error when a wrong track number is passed.
+    pub fn disable_track(self, track: usize) -> Result<Self> {
+        if track > self.tracks_count() - 1 {
+            return Err(Error::WrongTrack);
+        }
+
+        unsafe {
+            ffms2_sys::FFMS_TrackIndexSettings(self.0, track as i32, 0, 0);
+        }
+        Ok(self)
+    }
+
+    /// Enables the indexing process for the given track type.
+    ///
+    /// If an audio track type is passed as input, it enables dumping the
+    /// decoded audio during the indexing process.
+    ///
+    /// Returns an error when an `[Unknown]` track type is passed.
+    pub fn enable_track_type(self, track_type: TrackType) -> Result<Self> {
+        if matches!(track_type, TrackType::Unknown) {
+            return Err(Error::UnknownTrackType);
+        }
+
         unsafe {
             ffms2_sys::FFMS_TrackTypeIndexSettings(
                 self.0,
                 TrackType::ffms2_track_type(track_type) as i32,
-                index as i32,
+                1,
                 0,
             );
         }
+
+        Ok(self)
+    }
+
+    /// Disables the indexing process for the given track type.
+    ///
+    /// If an audio track type is passed as input, it disables dumping the
+    /// decoded audio during the indexing process.
+    ///
+    /// Returns an error when an `[Unknown]` track type is passed.
+    pub fn disable_track_type(self, track_type: TrackType) -> Result<Self> {
+        if matches!(track_type, TrackType::Unknown) {
+            return Err(Error::UnknownTrackType);
+        }
+
+        unsafe {
+            ffms2_sys::FFMS_TrackTypeIndexSettings(
+                self.0,
+                TrackType::ffms2_track_type(track_type) as i32,
+                0,
+                0,
+            );
+        }
+
+        Ok(self)
     }
 
     /// Sets a callback function for indexing progress updates.

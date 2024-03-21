@@ -112,6 +112,12 @@ pub enum Error {
     /// Failure in retrieving the track.
     #[error("Failed to get the track.")]
     Track,
+    /// Wrong track number.
+    #[error("Wrong track number.")]
+    WrongTrack,
+    /// Unknown track type.
+    #[error("Unknown track type.")]
+    UnknownTrackType,
     /// Failure in getting frames.
     #[error("Failed to get frames.")]
     Frames,
