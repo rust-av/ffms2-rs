@@ -222,14 +222,14 @@ impl AudioDelay {
     }
 }
 
-/// Audio properties.
+/// Audio track metadata.
 #[derive(Debug)]
 pub struct AudioProperties {
     /// Audio sample format.
     ///
     /// If `None`, no sample format has been found.
     pub sample_format: Option<SampleFormat>,
-    /// Audio sample rate (samples/second).
+    /// Audio sample rate in samples/second.
     pub sample_rate: usize,
     /// The number of bits per audio sample.
     ///

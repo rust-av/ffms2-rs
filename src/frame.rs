@@ -3,8 +3,8 @@ use std::slice;
 
 use std::ffi::CString;
 
-use ffmpeg_the_third::ffi::AVPixelFormat;
-use ffmpeg_the_third::format::Pixel;
+//use ffmpeg_the_third::ffi::AVPixelFormat;
+//use ffmpeg_the_third::format::Pixel;
 
 use ffms2_sys::{FFMS_Frame, FFMS_FrameInfo, FFMS_Resizers};
 
@@ -188,7 +188,7 @@ impl Frame {
         Ok(PixelFormat::new(pixel_format))
     }
 
-    pub fn planes(&self) -> Option<[Option<&[u8]>; PLANES_NUMBER]> {
+    /*pub fn planes(&self) -> Option<[Option<&[u8]>; PLANES_NUMBER]> {
         let mut planes: [Option<&[u8]>; PLANES_NUMBER] = Default::default();
 
         let log2_chroma_h =
@@ -224,7 +224,7 @@ impl Frame {
         }
 
         Some(planes)
-    }
+    }*/
 
     pub fn dolby_vision_rpu(&self) -> &[u8] {
         unsafe {
@@ -318,7 +318,7 @@ impl Frame {
         }
     }
 
-    fn i32_to_pixel_format(i32_pixel: i32) -> Pixel {
+    /*fn i32_to_pixel_format(i32_pixel: i32) -> Pixel {
         // This is not good, but we can't think of any better way to do this.
         // See https://github.com/rust-av/ffms2-rs/pull/29#discussion_r1115397695
         // What we've considered:
@@ -332,5 +332,5 @@ impl Frame {
         //    This is the best solution; we just gotta find someone to do it.
         let pix_fmt: AVPixelFormat = unsafe { mem::transmute(i32_pixel) };
         Pixel::from(pix_fmt)
-    }
+    }*/
 }

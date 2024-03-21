@@ -1,5 +1,7 @@
-use std::ffi::CString;
+use std::cmp::Ordering;
 use std::path::Path;
+
+use std::ffi::CString;
 
 use ffms2_sys::{FFMS_ColorRanges, FFMS_SeekMode, FFMS_Stereo3DFlags};
 
@@ -59,17 +61,78 @@ impl SeekMode {
     }
 }
 
+/// Pixel type format for a stereoscopic 3D video.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Stereo3DType {
+    /// Unknown type.
     #[default]
     Unknown,
+    /// Not a stereoscopic video.
     TwoDimensional,
+    /// Video views are next to each other.
+    ///
+    /// ```
+    /// LLLLRRRR
+    /// LLLLRRRR
+    /// LLLLRRRR
+    /// ...
+    /// ```
     SideBySide,
+    /// Video views are on top of each other.
+    ///
+    /// ```
+    /// LLLLLLLL
+    /// LLLLLLLL
+    /// RRRRRRRR
+    /// RRRRRRRR
+    /// ```
     TopBottom,
+    /// Video views are alternated temporally.
+    ///
+    /// ```
+    /// frame0   frame1   frame2   ...
+    /// LLLLLLLL RRRRRRRR LLLLLLLL
+    /// LLLLLLLL RRRRRRRR LLLLLLLL
+    /// LLLLLLLL RRRRRRRR LLLLLLLL
+    /// ...      ...      ...
+    /// ```
     FrameSequence,
+    /// Video views are packed in a checkerboard-like structure per pixel.
+    ///
+    /// ```
+    /// LRLRLRLR
+    /// RLRLRLRL
+    /// LRLRLRLR
+    /// ...
+    /// ```
     CheckerBoard,
+    /// Video views are next to each other, but when upscaling a checkerboard
+    /// pattern is applied.
+    ///
+    /// ```
+    /// LLLLRRRR          L L L L    R R R R
+    /// LLLLRRRR    =>     L L L L  R R R R
+    /// LLLLRRRR          L L L L    R R R R
+    /// LLLLRRRR           L L L L  R R R R
+    /// ```
     SideBySideQuincunx,
+    /// Views are packed per line, as if interlaced.
+    ///
+    /// ```
+    /// LLLLLLLL
+    /// RRRRRRRR
+    /// LLLLLLLL
+    /// ...
+    /// ```
     Lines,
+    /// Views are packed per column.
+    ///
+    /// ```
+    /// LRLRLRLR
+    /// LRLRLRLR
+    /// LRLRLRLR
+    /// ...
+    /// ```
     Columns,
 }
 
@@ -94,10 +157,15 @@ impl Stereo3DType {
     }
 }
 
+/// Flags for a stereoscopic 3D video.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Stereo3DFlags {
+    /// Unknown flag.
     #[default]
     Unknown,
+    /// Inverted views.
+    ///
+    /// Right/Bottom represents the left view.
     Invert,
 }
 
@@ -112,11 +180,21 @@ impl Stereo3DFlags {
     }
 }
 
+/// Valid range of luma values for a YUV video stream.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum ColorRange {
+    /// The range is not specified.
     #[default]
     Unspecified,
+    /// TV range, also known as limited range.
+    ///
+    /// Range of luma values: [16, 235].
+    /// Bit-depth: 8-bit
     Mpeg,
+    /// PC range, also known as full range.
+    ///
+    /// Range of luma values: [0, 255].
+    /// Bit-depth: 8-bit.
     Jpeg,
 }
 
@@ -141,34 +219,108 @@ impl ColorRange {
     }
 }
 
+/// Flip direction to be applied before a rotation.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Flip {
+    /// No flip operation.
     #[default]
-    Unknown,
-    Vertical,
+    NoFlip,
+    /// Horizontal flip direction.
     Horizontal,
+    /// Vertical flip direction.
+    Vertical,
 }
 
+/// Frame rate associated with a video track.
+///
+/// It is obtained dividing the numerator by the denominator field.
+///
+/// For `Matroska` files, this rational number is based on the average frame
+/// duration of all frames, while, for everything else, it is based
+/// on the duration of the first frame.
+///
+/// This value should not be used to extrapolate wallclock timestamps
+/// for each frame, because it makes impossible to manage variable framerate
+/// properly.
+///
+/// This value are mostly useful for informational purposes and might
+/// be reliable for old containers formats such as AVI.
+///
+/// It would be better to generate individual frame timestamps from
+/// `[Frame.pts]` instead of using this value.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct FrameRate {
+    /// Frame rate numerator associated with a track.
+    pub numerator: usize,
+    /// Frame rate denominator associated with a track.
+    pub denominator: usize,
+}
+
+/// Repeat First Field (RFF) timebase associated with a MPEG video track.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct RFFTimebase {
+    /// RFF timebase numerator.
+    pub numerator: usize,
+    /// RFF timebase denominator.
+    pub denominator: usize,
+}
+
+/// Sample aspect ratio associated with video track frames.
+///
+/// This value should be taken into account to compute the correct display
+/// aspect ratio for anamorphic video track.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct SampleAspectRatio {
+    /// Sample aspect ratio numerator.
+    pub numerator: usize,
+    /// Sample aspect ratio denominator.
+    pub denominator: usize,
+}
+
+/// The number of pixels in each direction (top, bottom, left, right)
+/// a frame should be cropped before displaying it.
+///
+/// It is recommended to use this data whenever frames must be displayed
+/// in a correct way.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Crop {
+    /// Top direction.
+    pub top: i32,
+    /// Bottom direction.
+    pub bottom: i32,
+    /// Left direction.
+    pub left: i32,
+    /// Right direction.
+    pub right: i32,
+}
+
+/// Video track metadata.
 #[derive(Debug)]
 pub struct VideoProperties {
-    pub fps_numerator: usize,
-    pub fps_denominator: usize,
-    pub rff_numerator: usize,
-    pub rff_denominator: usize,
+    /// Frame rate associated with a video track.
+    pub frame_rate: FrameRate,
+    /// Repeat First Field (RFF) timebase associated with a MPEG video track.
+    pub rff_timebase: RFFTimebase,
+    /// Number of frames in a video track.
     pub frames_count: usize,
-    pub sar_numerator: usize,
-    pub sar_denominator: usize,
-    pub crop_top: i32,
-    pub crop_bottom: i32,
-    pub crop_left: i32,
-    pub crop_right: i32,
-    pub top_field_first: usize,
+    /// Sample aspect ratio associated with video track frames.
+    pub sar: SampleAspectRatio,
+    /// The number of pixels a frame should be cropped in order to be displayed
+    /// correctly.
+    pub crop: Crop,
+    /// Whether a video track has the top field first, otherwise it has the
+    /// bottom field first.
+    pub top_field_first: bool,
+    /// YUV color space for a video track.
     pub color_space: usize,
+    /// Valid range of luma values for a YUV video track.
     pub color_range: ColorRange,
     pub first_time: f64,
     pub last_time: f64,
     pub rotation: usize,
+    /// Pixel type format for a stereoscopic 3D video.
     pub stereo3d_type: Stereo3DType,
+    /// Flags for a stereoscopic 3D video.
     pub stereo3d_flags: Stereo3DFlags,
     pub last_end_time: f64,
     pub has_mastering_display_primaries: bool,
@@ -182,6 +334,7 @@ pub struct VideoProperties {
     pub has_content_light_level: bool,
     pub content_light_level_max: usize,
     pub content_light_level_average: usize,
+    /// Flip direction to be applied before a rotation.
     pub flip: Flip,
 }
 
@@ -232,18 +385,26 @@ impl VideoSource {
         let ref_video = unsafe { *video_prop };
 
         VideoProperties {
-            fps_numerator: ref_video.FPSNumerator as usize,
-            fps_denominator: ref_video.FPSDenominator as usize,
-            rff_numerator: ref_video.RFFNumerator as usize,
-            rff_denominator: ref_video.RFFDenominator as usize,
+            frame_rate: FrameRate {
+                numerator: ref_video.FPSNumerator as usize,
+                denominator: ref_video.FPSDenominator as usize,
+            },
+            rff_timebase: RFFTimebase {
+                numerator: ref_video.RFFNumerator as usize,
+                denominator: ref_video.RFFDenominator as usize,
+            },
             frames_count: ref_video.NumFrames as usize,
-            sar_numerator: ref_video.SARNum as usize,
-            sar_denominator: ref_video.SARDen as usize,
-            crop_top: ref_video.CropTop,
-            crop_bottom: ref_video.CropBottom,
-            crop_left: ref_video.CropLeft,
-            crop_right: ref_video.CropRight,
-            top_field_first: ref_video.TopFieldFirst as usize,
+            sar: SampleAspectRatio {
+                numerator: ref_video.SARNum as usize,
+                denominator: ref_video.SARDen as usize,
+            },
+            crop: Crop {
+                top: ref_video.CropTop,
+                bottom: ref_video.CropBottom,
+                left: ref_video.CropLeft,
+                right: ref_video.CropRight,
+            },
+            top_field_first: ref_video.TopFieldFirst > 0,
             color_space: ref_video.ColorSpace as usize,
             color_range: ColorRange::new(ref_video.ColorRange),
             first_time: ref_video.FirstTime,
@@ -274,12 +435,10 @@ impl VideoSource {
             content_light_level_max: ref_video.ContentLightLevelMax as usize,
             content_light_level_average: ref_video.ContentLightLevelAverage
                 as usize,
-            flip: if ref_video.Flip == -1 {
-                Flip::Vertical
-            } else if ref_video.Flip == 1 {
-                Flip::Horizontal
-            } else {
-                Flip::Unknown
+            flip: match ref_video.Flip.cmp(&0) {
+                Ordering::Equal => Flip::NoFlip,
+                Ordering::Greater => Flip::Horizontal,
+                Ordering::Less => Flip::Vertical,
             },
         }
     }

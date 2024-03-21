@@ -95,9 +95,7 @@ impl Track {
     /// Builds a `[Track]` from the given `[Index]` and track number.
     pub fn from_index(index: &Index, track_number: usize) -> Result<Self> {
         if track_number > index.tracks_count() - 1 {
-            return Err(Error::FFMS2(Cow::Borrowed(
-                "The track number does not exist.",
-            )));
+            return Err(Error::WrongTrack);
         }
 
         let track = unsafe {
