@@ -12,20 +12,34 @@ use crate::error::{InternalError, Result};
 use crate::pixel::PixelFormat;
 use crate::video::{ColorRange, VideoSource};
 
-const PLANES_NUMBER: usize = 4;
+/// Supported number of frame planes.
+pub const PLANES_COUNT: usize = 4;
 
+/// Frame resizing/scaling algorithms.
 #[derive(Clone, Copy, Debug)]
 pub enum Resizers {
+    /// Fast bilinear scaling algorithm.
     FastBilinear,
+    /// Bilinear scaling algorithm.
     Bilinear,
+    /// Bicubic scaling algorithm.
     Bicubic,
-    X,
-    Point,
+    /// Experimental scaling algorithm.
+    Experimental,
+    /// Nearest neighbor rescaling algorithm.
+    NearestNeighbor,
+    /// Averaging area rescaling algorithm.
     Area,
+    /// Bicubic scaling algorithm for the luma plane, while bilinear
+    /// for chroma planes.
     Bicublin,
+    /// Gaussian rescaling algorithm.
     Gauss,
+    /// Sinc rescaling algorithm.
     Sinc,
+    /// Lanczos rescaling algorithm.
     Lanczos,
+    /// Natural bicubic spline rescaling algorithm.
     Spline,
 }
 
@@ -35,8 +49,8 @@ impl Resizers {
             Self::FastBilinear => FFMS_Resizers::FFMS_RESIZER_FAST_BILINEAR,
             Self::Bilinear => FFMS_Resizers::FFMS_RESIZER_BILINEAR,
             Self::Bicubic => FFMS_Resizers::FFMS_RESIZER_BICUBIC,
-            Self::X => FFMS_Resizers::FFMS_RESIZER_X,
-            Self::Point => FFMS_Resizers::FFMS_RESIZER_POINT,
+            Self::Experimental => FFMS_Resizers::FFMS_RESIZER_X,
+            Self::NearestNeighbor => FFMS_Resizers::FFMS_RESIZER_POINT,
             Self::Area => FFMS_Resizers::FFMS_RESIZER_AREA,
             Self::Bicublin => FFMS_Resizers::FFMS_RESIZER_BICUBLIN,
             Self::Gauss => FFMS_Resizers::FFMS_RESIZER_GAUSS,
@@ -47,15 +61,64 @@ impl Resizers {
     }
 }
 
+/// Chroma samples location in a frame.
+///
+/// The illustration shows the location of the first (top-left) chroma sample
+/// of a frame.
+///
+/// The left scheme shows **only** luma samples.
+/// The right scheme shows the location of the chroma sample.
+///
+/// To have a real and complete visualization, the left scheme must be
+/// overlapped to the right scheme, but this is not possible due to
+/// text limitations.
+///
+///                  a   b         c   d
+///                  v   v         v   v
+///                  ______        ______
+/// 1st luma line > |X   X ...    |3 4 X ...
+///                 |             |1 2
+/// 2nd luma line > |X   X ...    |5 6 X ...
+///
+/// *X*: _luma samples_
+///
+/// # Chroma locations
+///
+/// - *1* = _Left_
+/// - *2* = _Center_
+/// - *3* = _Top-left_
+/// - *4* = _Top_
+/// - *5* = _Bottom-left_
+/// - *6* = _Bottom_
+///
+/// # Samples descriptions
+///
+/// - *a* = _1st horizontal luma sample location_
+/// - *b* = _2nd horizontal luma sample location_
+/// - *c* = _1st top-left chroma sample location_
+/// - *d* = _2nd horizontal luma sample location_
 #[derive(Clone, Copy, Debug, Default)]
 pub enum ChromaLocation {
+    /// Unspecified location.
     #[default]
     Unspecified,
+    /// Left.
+    ///
+    /// MPEG-2/4 4:2:0, H.264 default for 4:2:0.
     Left,
+    /// Center.
+    ///
+    /// MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0.
     Center,
+    /// Top-left.
+    ///
+    /// ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2.
     TopLeft,
+    /// Top.
     Top,
+    /// Bottom-left.
     BottomLeft,
+    /// Bottom.
     Bottom,
 }
 
@@ -75,20 +138,35 @@ impl ChromaLocation {
     }
 }
 
+/// Video frame metadata.
 #[derive(Debug)]
 pub struct FrameInfo {
-    pub pts: usize,
+    /// The decoding timestamp of a frame.
+    ///
+    /// To convert this to a timestamp in clock milliseconds, use:
+    ///
+    /// (`[FrameInfo.pts]` * `[TrackTimebase.numerator]`) / `[TrackTimebase.denominator]`.
+    pub pts: u64,
+    /// Repeat First Field (RFF) flag for a MPEG frame.
+    ///
+    /// A frame must be displayed for `1 + repeat_picture` time units,
+    /// where the time units are expressed in the special
+    /// `[VideoSource.RFFTimebase]`.
+    ///
+    /// Usual timestamps must be ignored since since they are fundamentally
+    /// incompatible with RFF data.
     pub repeat_picture: usize,
-    pub keyframe: usize,
+    /// Whether a frame is a keyframe.
+    pub keyframe: bool,
     pub original_pts: usize,
 }
 
 impl FrameInfo {
     pub(crate) fn new(frame_info: FFMS_FrameInfo) -> Self {
         Self {
-            pts: frame_info.PTS as usize,
+            pts: frame_info.PTS as u64,
             repeat_picture: frame_info.RepeatPict as usize,
-            keyframe: frame_info.KeyFrame as usize,
+            keyframe: frame_info.KeyFrame > 0,
             original_pts: frame_info.OriginalPTS as usize,
         }
     }
@@ -102,7 +180,7 @@ pub struct FrameResolution {
 
 #[derive(Debug)]
 pub struct Frame {
-    pub linesize: [usize; PLANES_NUMBER],
+    pub linesize: [usize; PLANES_COUNT],
     pub resolution: FrameResolution,
     pub encoded_width: usize,
     pub encoded_height: usize,
@@ -246,7 +324,7 @@ impl Frame {
         }
     }
 
-    const fn linesize(frame: &FFMS_Frame) -> [usize; PLANES_NUMBER] {
+    const fn linesize(frame: &FFMS_Frame) -> [usize; PLANES_COUNT] {
         [
             frame.Linesize[0] as usize,
             frame.Linesize[1] as usize,
