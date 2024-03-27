@@ -256,23 +256,53 @@ pub struct Frame {
     /// - b: FF_BI_TYPE
     /// - ?: Unknown
     pub picture_type: char,
-    /// YUV color space for a video track.
+    /// YUV color space.
     pub color_space: usize,
-    /// Valid range of luma values for a YUV video track.
+    /// Valid range of luma values for a YUV video source.
     pub color_range: ColorRange,
+    /// Frame color primaries.
     pub color_primaries: usize,
+    /// Frame transfer characteristics.
     pub transfer_characteristics: usize,
+    /// Chroma samples location in a frame.
     pub chroma_location: ChromaLocation,
+    /// Whether the color primaries coordinates of the display used to master a
+    /// video source content are accessible.
+    ///
+    /// A receiver can use this metadata to determine whether a video source
+    /// content could contain colors or light levels which cannot be reproduced
+    /// by the current display.
     pub has_mastering_display_primaries: bool,
+    /// RGB chromaticity x-coordinates of the display used to master a
+    /// video source content.
     pub mastering_display_primaries_x: [f64; 3],
+    /// RGB chromaticity y-coordinates of the display used to master a
+    /// video source content.
     pub mastering_display_primaries_y: [f64; 3],
+    /// White point x-coordinate of the display used to master a
+    /// video source content.
     pub mastering_display_white_point_x: f64,
+    /// White point y-coordinate of the display used to master a
+    /// video source content.
     pub mastering_display_white_point_y: f64,
+    /// Whether the luminance values of the display used to master a video
+    /// source content are accessible.
     pub has_mastering_display_luminance: bool,
+    /// Minimum luminance of the display used to master a video
+    /// source content in cd/m^2.
     pub mastering_display_min_luminance: f64,
+    /// Maximum luminance of the display used to master a video
+    /// source content in cd/m^2.
     pub mastering_display_max_luminance: f64,
+    /// Whether a video source content has maximum and average light levels.
+    /// Both of these values are measured over the duration of the content.
+    ///
+    /// A receiver can use this information to adjust the content light
+    /// levels so that they match the capability of the current display.
     pub has_content_light_level: bool,
+    /// Maximum light level of a video source content in cd/m^2.
     pub content_light_level_max: usize,
+    /// Average light level of a video source content in cd/m^2.
     pub content_light_level_average: usize,
     frame: FFMS_Frame,
 }
