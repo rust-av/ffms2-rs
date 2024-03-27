@@ -158,6 +158,13 @@ pub struct FrameInfo {
     pub repeat_picture: usize,
     /// Whether a frame is a keyframe.
     pub keyframe: bool,
+    /// Original decoding timestamp of a frame.
+    ///
+    /// All timestamps are normalized in order to be contiguous and this
+    /// behavior might break some kind of video sources.
+    ///
+    /// This field should be used when a video source presents discontinuous
+    /// timestamps such as Variable Frame Rate (VFR) formats.
     pub original_pts: usize,
 }
 
@@ -172,27 +179,83 @@ impl FrameInfo {
     }
 }
 
+/// Output frame resolution in pixels.
 #[derive(Debug)]
 pub struct FrameResolution {
+    /// Frame width.
     pub width: usize,
+    /// Frame height.
     pub height: usize,
 }
 
 #[derive(Debug)]
 pub struct Frame {
+    /// The length in bytes of each frame plane scan line. The number of scan
+    /// lines is equal to the number of frame planes, thus `PLANES_COUNT`.
+    ///
+    /// The total size in bytes of a frame plane is obtained with the following
+    /// computation:
+    ///
+    /// `linesize[i]` * `[VideoProperties.height]`
+    ///
+    /// Some pixel formats though, most notably `YV12`, have vertical chroma
+    /// subsampling, and then the U/V planes may be of a different height than
+    /// the primary plane. In that case, a frame is stored inverted in memory
+    /// and a plane is retrieved starting from the last row of data.
     pub linesize: [usize; PLANES_COUNT],
+    /// Output frame resolution in pixels.
     pub resolution: FrameResolution,
+    /// The original frame width resolution, in pixels, as encoded in the
+    /// compressed file, before any scaling is applied.
+    ///
+    /// It must not necessarily be the same for all frames in a video source.
     pub encoded_width: usize,
+    /// The original frame height resolution, in pixels, as encoded in the
+    /// compressed file, before any scaling is applied.
+    ///
+    /// It must not necessarily be the same for all frames in a video source.
     pub encoded_height: usize,
+    /// The original frame pixel format, as encoded in the compressed file.
     pub encoded_pixel_format: PixelFormat,
+    /// The output frame width resolution in pixels after a scaling has been
+    /// applied. This represents the frame width resolution of planes
+    /// returned by the `planes` function.
     pub scaled_width: usize,
+    /// The output frame height resolution in pixels after a scaling has been
+    /// applied. This represents the frame height resolution of planes
+    /// returned by the `planes` function.
     pub scaled_height: usize,
+    /// The output frame pixel format.
     pub converted_pixel_format: PixelFormat,
+    /// Whether a frame is a keyframe.
     pub keyframe: usize,
+    /// Repeat First Field (RFF) flag for a MPEG frame.
+    ///
+    /// A frame must be displayed for `1 + repeat_picture` time units,
+    /// where the time units are expressed in the special
+    /// `[VideoSource.RFFTimebase]`.
+    ///
+    /// Usual timestamps must be ignored since since they are fundamentally
+    /// incompatible with RFF data.
     pub repeat_picture: usize,
-    pub interlaced_frame: usize,
-    pub top_field_first: usize,
-    pub picture_type: u8,
+    /// Whether a frame has been coded as interlaced.
+    pub interlaced_frame: bool,
+    /// Whether a frame has the top field first, otherwise it has the bottom
+    /// field first.
+    ///
+    /// Only relevant when [`interlaced_frame`] is `true`.
+    pub top_field_first: bool,
+    /// Compressed frame coding type.
+    ///
+    /// - I: Intra
+    /// - P: Predicted
+    /// - B: Bi-dir predicted
+    /// - S: S(GMC)-VOP MPEG4
+    /// - i: Switching Intra
+    /// - p: Switching Predicted
+    /// - b: FF_BI_TYPE
+    /// - ?: Unknown
+    pub picture_type: char,
     /// YUV color space for a video track.
     pub color_space: usize,
     /// Valid range of luma values for a YUV video track.
@@ -366,9 +429,9 @@ impl Frame {
             ),
             keyframe: frame.KeyFrame as usize,
             repeat_picture: frame.RepeatPict as usize,
-            interlaced_frame: frame.InterlacedFrame as usize,
-            top_field_first: frame.TopFieldFirst as usize,
-            picture_type: frame.PictType as u8,
+            interlaced_frame: frame.InterlacedFrame > 0,
+            top_field_first: frame.TopFieldFirst > 0,
+            picture_type: (frame.PictType as u8) as char,
             color_space: frame.ColorSpace as usize,
             color_range: ColorRange::new(frame.ColorRange),
             color_primaries: frame.ColorPrimaries as usize,
