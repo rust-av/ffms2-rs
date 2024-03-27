@@ -121,6 +121,12 @@ pub enum Error {
     /// Failure in getting frames.
     #[error("Failed to get frames.")]
     Frames,
+    /// Wrong frame number.
+    #[error("Wrong frame number.")]
+    WrongFrame,
+    /// Wrong timestamp.
+    #[error("Wrong timestamp.")]
+    WrongTimestamp,
     /// Failure in converting an operating system string into a str.
     #[error("str convervion error.")]
     StrConversion,

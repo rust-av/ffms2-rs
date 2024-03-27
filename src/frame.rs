@@ -8,7 +8,7 @@ use std::ffi::CString;
 
 use ffms2_sys::{FFMS_Frame, FFMS_FrameInfo, FFMS_Resizers};
 
-use crate::error::{InternalError, Result};
+use crate::error::{Error, InternalError, Result};
 use crate::pixel::PixelFormat;
 use crate::video::{ColorRange, VideoSource};
 
@@ -257,7 +257,7 @@ pub struct Frame {
     /// - ?: Unknown
     pub picture_type: char,
     /// YUV color space.
-    pub color_space: usize,
+    pub color_space: PixelFormat,
     /// Valid range of luma values for a YUV video source.
     pub color_range: ColorRange,
     /// Frame color primaries.
@@ -308,10 +308,19 @@ pub struct Frame {
 }
 
 impl Frame {
+    /// Decodes and returns the `[Frame]` data associated with the input frame
+    /// number from the given video source.
+    ///
+    /// This method is not thread-safe, so it can retrieve only one frame
+    /// at a time.
     pub fn new(
         video_source: &mut VideoSource,
         frame_number: usize,
     ) -> Result<Self> {
+        if frame_number > video_source.video_properties().frames_count - 1 {
+            return Err(Error::WrongFrame);
+        }
+
         let mut error = InternalError::new();
 
         let ffms2_frame = unsafe {
@@ -331,16 +340,25 @@ impl Frame {
         }
     }
 
+    /// Decodes and returns the `[Frame]` data associated with the input
+    /// timestamp, in seconds, from the given video source.
+    ///
+    /// This method will retrieve the frame that starts closest to the input
+    /// timestamp.
     pub fn frame_by_time(
         video_source: &mut VideoSource,
-        time: f64,
+        timestamp: f64,
     ) -> Result<Self> {
+        if timestamp.is_nan() || timestamp.is_sign_negative() {
+            return Err(Error::WrongTimestamp);
+        }
+
         let mut error = InternalError::new();
 
         let ffms2_frame = unsafe {
             ffms2_sys::FFMS_GetFrameByTime(
                 video_source.as_mut_ptr(),
-                time,
+                timestamp,
                 error.as_mut_ptr(),
             )
         };
@@ -354,6 +372,8 @@ impl Frame {
         }
     }
 
+    /// Translates a given color space/pixel format expressed in natural
+    /// language into a [`PixelFormat`].
     pub fn pixel_format(name: &str) -> Result<PixelFormat> {
         let source = CString::new(name)?;
         let pixel_format =
@@ -361,6 +381,10 @@ impl Frame {
         Ok(PixelFormat::new(pixel_format))
     }
 
+    /// Returns all supported frame planes.
+    ///
+    /// When a plane, or all planes, cannot be retrieved for whatever reason,
+    /// `None` is returned.
     /*pub fn planes(&self) -> Option<[Option<&[u8]>; PLANES_NUMBER]> {
         let mut planes: [Option<&[u8]>; PLANES_NUMBER] = Default::default();
 
@@ -399,7 +423,8 @@ impl Frame {
         Some(planes)
     }*/
 
-    pub fn dolby_vision_rpu(&self) -> &[u8] {
+    /// Returns the possible `Dolby Vision RPU` data contained in a frame.
+    pub fn dolby_vision_rpu(&self) -> Option<&[u8]> {
         unsafe {
             slice::from_raw_parts(
                 self.frame.DolbyVisionRPU,
@@ -408,7 +433,8 @@ impl Frame {
         }
     }
 
-    pub fn hdr10_plus(&self) -> &[u8] {
+    /// Returns the possible `HDR10+` dynamic metadata contained in a frame.
+    pub fn hdr10_plus(&self) -> Option<&[u8]> {
         unsafe {
             slice::from_raw_parts(
                 self.frame.HDR10Plus,
@@ -462,7 +488,7 @@ impl Frame {
             interlaced_frame: frame.InterlacedFrame > 0,
             top_field_first: frame.TopFieldFirst > 0,
             picture_type: (frame.PictType as u8) as char,
-            color_space: frame.ColorSpace as usize,
+            color_space: PixelFormat::new(frame.ColorSpace),
             color_range: ColorRange::new(frame.ColorRange),
             color_primaries: frame.ColorPrimaries as usize,
 
