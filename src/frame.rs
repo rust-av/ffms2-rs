@@ -289,10 +289,10 @@ pub struct Frame {
     /// source content are accessible.
     pub has_mastering_display_luminance: bool,
     /// Minimum luminance of the display used to master a video
-    /// source content in `cd/m^2`.
+    /// source content in cd/m<sup>2</sup>.
     pub mastering_display_min_luminance: f64,
     /// Maximum luminance of the display used to master a video
-    /// source content in `cd/m^2`.
+    /// source content in cd/m<sup>2</sup>.
     pub mastering_display_max_luminance: f64,
     /// Whether a video source content has maximum and average light levels.
     /// Both of these values are measured over the duration of the content.
@@ -300,9 +300,9 @@ pub struct Frame {
     /// A receiver can use this information to adjust the content light
     /// levels so that they match the capability of the current display.
     pub has_content_light_level: bool,
-    /// Maximum light level of a video source content in `cd/m^2`.
+    /// Maximum light level of a video source content in cd/m<sup>2</sup>.
     pub content_light_level_max: usize,
-    /// Average light level of a video source content in `cd/m^2`.
+    /// Average light level of a video source content in cd/m<sup>2</sup>.
     pub content_light_level_average: usize,
     frame: FFMS_Frame,
 }
