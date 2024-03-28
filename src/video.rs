@@ -386,11 +386,19 @@ impl VideoSource {
     /// Creates a new `[VideoSource]` instance.
     pub fn new(
         source_file: &Path,
-        track: usize,
+        track_number: usize,
         index: &Index,
         threads: usize,
         seek_mode: SeekMode,
     ) -> Result<Self> {
+        if track_number > index.tracks_count() - 1 {
+            return Err(Error::WrongTrack);
+        }
+
+        if source_file.is_file() {
+            return Err(Error::NotAFile);
+        }
+
         let source =
             CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
 
@@ -398,7 +406,7 @@ impl VideoSource {
         let video_source = unsafe {
             ffms2_sys::FFMS_CreateVideoSource(
                 source.as_ptr(),
-                track as i32,
+                track_number as i32,
                 index.as_mut_ptr(),
                 threads as i32,
                 SeekMode::ffms2_seek_mode(seek_mode) as i32,
@@ -487,9 +495,9 @@ impl VideoSource {
     /// useful results.
     pub fn set_input_format(
         &self,
-        color_space: usize,
+        color_space: PixelFormat,
         color_range: ColorRange,
-        pixel_format: usize,
+        pixel_format: PixelFormat,
     ) -> Result<()> {
         let mut error = InternalError::new();
         let err = unsafe {

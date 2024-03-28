@@ -383,8 +383,10 @@ impl Frame {
 
     /// Returns all supported frame planes.
     ///
-    /// When a plane, or all planes, cannot be retrieved for whatever reason,
-    /// `None` is returned.
+    /// When a plane cannot be retrieved for whatever reason,
+    /// a `None` array value is returned.
+    ///
+    /// When an internal error occurs, `None` is returned.
     /*pub fn planes(&self) -> Option<[Option<&[u8]>; PLANES_NUMBER]> {
         let mut planes: [Option<&[u8]>; PLANES_NUMBER] = Default::default();
 
@@ -406,7 +408,7 @@ impl Frame {
             )
             .enumerate()
         {
-            if linesize == 0 {
+            if data.is_null() || linesize == 0 {
                 *plane = None;
             } else {
                 let sub_h = if i == 0 { 0 } else { log2_chroma_h };
@@ -424,22 +426,33 @@ impl Frame {
     }*/
 
     /// Returns the possible `Dolby Vision RPU` data contained in a frame.
+    ///
+    /// When no data is available, `None` is returned.
     pub fn dolby_vision_rpu(&self) -> Option<&[u8]> {
+        if self.frame.DolbyVisionRPU.is_null() {
+            return None;
+        }
         unsafe {
-            slice::from_raw_parts(
+            Some(slice::from_raw_parts(
                 self.frame.DolbyVisionRPU,
                 self.frame.DolbyVisionRPUSize as usize,
-            )
+            ))
         }
     }
 
     /// Returns the possible `HDR10+` dynamic metadata contained in a frame.
+    ///
+    /// When no metadata is available, `None` is returned.
     pub fn hdr10_plus(&self) -> Option<&[u8]> {
+        if self.frame.HDR10Plus.is_null() {
+            return None;
+        }
+
         unsafe {
-            slice::from_raw_parts(
+            Some(slice::from_raw_parts(
                 self.frame.HDR10Plus,
                 self.frame.HDR10PlusSize as usize,
-            )
+            ))
         }
     }
 

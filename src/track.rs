@@ -131,6 +131,10 @@ impl Track {
     ///
     /// Only meaningful for video tracks.
     pub fn write_timecodes(&self, timecode_file: &Path) -> Result<()> {
+        if timecode_file.is_file() {
+            return Err(Error::NotAFile);
+        }
+
         let source =
             CString::new(timecode_file.to_str().ok_or(Error::StrConversion)?)?;
 

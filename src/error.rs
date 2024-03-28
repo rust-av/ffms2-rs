@@ -127,6 +127,9 @@ pub enum Error {
     /// Wrong timestamp.
     #[error("Wrong timestamp.")]
     WrongTimestamp,
+    /// The path is not a file.
+    #[error("The path is not a file.")]
+    NotAFile,
     /// Failure in converting an operating system string into a str.
     #[error("str convervion error.")]
     StrConversion,
