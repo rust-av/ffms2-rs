@@ -109,6 +109,9 @@ pub enum Error {
     /// An FFMS2 API error.
     #[error("FFSM2 API error.")]
     FFMS2(borrow::Cow<'static, str>),
+    /// The path is not a file.
+    #[error("The path is not a file.")]
+    NotAFile,
     /// Failure in retrieving the track.
     #[error("Failed to get the track.")]
     Track,
@@ -118,6 +121,15 @@ pub enum Error {
     /// Unknown track type.
     #[error("Unknown track type.")]
     UnknownTrackType,
+    /// Wrong audio sample range.
+    #[error("Wrong audio sample range.")]
+    WrongSampleRange,
+    /// Unknown audio sample format.
+    #[error("Unknown audio sample format.")]
+    UknownSampleFormat,
+    /// Unknown audio channel.
+    #[error("Unknown audio channel.")]
+    UknownAudioChannel,
     /// Failure in getting frames.
     #[error("Failed to get frames.")]
     Frames,
@@ -127,9 +139,6 @@ pub enum Error {
     /// Wrong timestamp.
     #[error("Wrong timestamp.")]
     WrongTimestamp,
-    /// The path is not a file.
-    #[error("The path is not a file.")]
-    NotAFile,
     /// Failure in converting an operating system string into a str.
     #[error("str convervion error.")]
     StrConversion,

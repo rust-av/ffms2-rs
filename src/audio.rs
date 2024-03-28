@@ -1,6 +1,5 @@
 use std::mem;
 
-use std::borrow::Cow;
 use std::path::Path;
 
 use std::ffi::c_void;
@@ -276,17 +275,25 @@ impl AudioSource {
     /// Creates a new `[AudioSource]` instance.
     pub fn new(
         source_file: &Path,
-        track: usize,
+        track_number: usize,
         index: &Index,
         delay_mode: AudioDelay,
     ) -> Result<Self> {
+        if track_number > index.tracks_count() - 1 {
+            return Err(Error::WrongTrack);
+        }
+
+        if source_file.is_file() {
+            return Err(Error::NotAFile);
+        }
+
         let source =
             CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
         let mut error = InternalError::new();
         let audio_source = unsafe {
             ffms2_sys::FFMS_CreateAudioSource(
                 source.as_ptr(),
-                track as i32,
+                track_number as i32,
                 index.as_mut_ptr(),
                 delay_mode.ffms2_audio_delay(),
                 error.as_mut_ptr(),
@@ -305,19 +312,27 @@ impl AudioSource {
     /// between the loudest and quietest sounds.
     pub fn audio_source_2(
         source_file: &Path,
-        track: usize,
+        track_number: usize,
         index: &Index,
         delay_mode: AudioDelay,
         fill_gaps: AudioGapFillModes,
         drc_scale: f64,
     ) -> Result<Self> {
+        if track_number > index.tracks_count() - 1 {
+            return Err(Error::WrongTrack);
+        }
+
+        if source_file.is_file() {
+            return Err(Error::NotAFile);
+        }
+
         let source =
             CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
         let mut error = InternalError::new();
         let audio_source = unsafe {
             ffms2_sys::FFMS_CreateAudioSource2(
                 source.as_ptr(),
-                track as i32,
+                track_number as i32,
                 index.as_mut_ptr(),
                 delay_mode.ffms2_audio_delay(),
                 fill_gaps.ffms2_audio_gap_fill_modes() as i32,
@@ -363,9 +378,7 @@ impl AudioSource {
         if sample_start > (audio_prop.samples_count - 1)
             || samples_count > (audio_prop.samples_count - 1)
         {
-            return Err(Error::FFMS2(Cow::Borrowed(
-                "Requesting samples beyond the stream end",
-            )));
+            return Err(Error::WrongSampleRange);
         }
 
         let num_elements = samples_count * audio_prop.channels_count;
@@ -407,20 +420,12 @@ impl AudioSource {
     pub fn output_format(&self, options: &ResampleOptions) -> Result<()> {
         let channel_layout = match &options.channel_layout {
             Some(channel_layout) => channel_layout,
-            None => {
-                return Err(Error::FFMS2(Cow::Borrowed(
-                    "Unknown audio channel.",
-                )))
-            }
+            None => return Err(Error::UknownAudioChannel),
         };
 
         let sample_format = match options.sample_format {
             Some(sample_format) => sample_format,
-            None => {
-                return Err(Error::FFMS2(Cow::Borrowed(
-                    "Unknown sample format.",
-                )))
-            }
+            None => return Err(Error::UknownSampleFormat),
         };
 
         let mut error = InternalError::new();
