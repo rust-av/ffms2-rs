@@ -194,7 +194,7 @@ pub enum AudioDelay {
     /// so that the 0-index sample 0 in the decoded audio starts at the same
     /// time as the 0-index frame of the first video track.
     ///
-    /// Same as `TimeZero` mode if the first video frame of the first video
+    /// Same as [`TimeZero`](Self::TimeZero) mode if the first video frame of the first video
     /// track starts at time zero.
     ///
     /// This mode is the default one.
@@ -202,7 +202,7 @@ pub enum AudioDelay {
     FirstVideoTrack,
     /// Index track mode.
     ///
-    /// Same as `NoShift`, but it acts on the audio samples of the video
+    /// Same as [`NoShift`](Self::NoShift), but it acts on the audio samples of the video
     /// track passed as input.
     IndexTrack(usize),
 }
@@ -229,7 +229,7 @@ pub struct AudioProperties {
     ///
     /// If [`None`], no sample format has been found.
     pub sample_format: Option<SampleFormat>,
-    /// Audio sample rate in samples/second.
+    /// Audio sample rate in `samples/second`.
     pub sample_rate: usize,
     /// The number of bits per audio sample.
     ///
@@ -248,17 +248,17 @@ pub struct AudioProperties {
     pub channel_layout: Option<Vec<AudioChannel>>,
     /// Audio stream number of samples.
     pub samples_count: usize,
-    /// Audio stream first timestamp in milliseconds.
+    /// Audio stream first timestamp in `milliseconds`.
     ///
     /// Useful to know if the audio stream has a delay, or for quickly
     /// determining its length in seconds.
     pub first_time: f64,
-    /// Audio stream last timestamp in milliseconds.
+    /// Audio stream last timestamp in `milliseconds`.
     ///
     /// Useful to know if the audio stream has a delay, or for quickly
     /// determining its length in seconds.
     pub last_time: f64,
-    /// Audio stream last packet end time in milliseconds.
+    /// Audio stream last packet end time in `milliseconds`.
     pub last_end_time: f64,
 }
 
@@ -309,8 +309,8 @@ impl AudioSource {
     }
 
     /// Creates a new [`AudioSource`] instance also considering the mode to fill
-    /// audio gaps and the Dynamic Range Compression, which balances the range
-    /// between the loudest and quietest sounds.
+    /// audio gaps and the **Dynamic Range Compression**, which balances the
+    /// range between the loudest and quietest sounds.
     pub fn audio_source_2(
         source_file: &Path,
         track_number: usize,

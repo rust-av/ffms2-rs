@@ -76,12 +76,12 @@ pub struct Index(*mut ffms2_sys::FFMS_Index, Vec<u8>, usize);
 unsafe impl Send for Index {}
 
 impl Index {
-    /// Creates a new `[Index]` instance from a given index file saved on disk,
+    /// Creates a new [`Index`] instance from a given index file saved on disk,
     /// which can be an absolute or a relative path.
     ///
-    /// Note that index files can only be read by the exact `ffms2' version
+    /// Note that index files can only be read by the exact `ffms2` version
     /// as they were written with. Attempting to open an index file written with
-    /// a different `ffsm2` version produces an index mismatch error.
+    /// a different `ffms2` version produces an index mismatch error.
     pub fn new(index_file: &Path) -> Result<Self> {
         if index_file.is_file() {
             return Err(Error::NotAFile);
@@ -101,18 +101,18 @@ impl Index {
         }
     }
 
-    /// Returns the index error passed as input to the `[do_indexing]`
-    /// function.
+    /// Returns the index error passed as input to the
+    /// [`do_indexing`](Indexer::do_indexing) function.
     ///
     /// This kind of error might occur during the construction of an index
-    /// file made by an `[Indexer]`.
+    /// file made by an [`Indexer`].
     pub fn indexer_error(&self) -> IndexErrorHandling {
         let index_error_handling =
             unsafe { ffms2_sys::FFMS_GetErrorHandling(self.0) };
         IndexErrorHandling::new(index_error_handling)
     }
 
-    /// Creates a new `[Index]` instance from a memory bytes buffer.
+    /// Creates a new [`Index`] instance from a memory bytes buffer.
     pub fn from_buffer(buffer: &[u8]) -> Result<Self> {
         let mut error = InternalError::new();
         let size = mem::size_of_val(buffer);
@@ -292,7 +292,7 @@ impl Drop for Index {
 ///
 /// Before opening a media file, it is **necessary** to index its content.
 ///
-/// An indexer ensures that keyframe positions, timecode data, and
+/// An indexer ensures that key frame positions, timecode data, and
 /// other information are known in advance, so that a frame-accurate seeking
 /// can be done in an easy way.
 ///
@@ -303,7 +303,7 @@ pub struct Indexer(*mut ffms2_sys::FFMS_Indexer, usize);
 unsafe impl Send for Indexer {}
 
 impl Indexer {
-    /// Creates a new `[Indexer]` from a given media file, which can be an
+    /// Creates a new [`Indexer`] from a given media file, which can be an
     /// absolute or a relative path.
     ///
     /// By default, all video tracks present in a media file are indexed,
@@ -328,7 +328,7 @@ impl Indexer {
         }
     }
 
-    /// Creates a new `[Indexer]` from a given media file. The indexing process
+    /// Creates a new [`Indexer`] from a given media file. The indexing process
     /// can be controlled through the demuxing options described as a
     /// key-value pairs.
     ///
@@ -401,20 +401,21 @@ impl Indexer {
 
     /// Returns the total number of tracks contained in the indexed media file.
     ///
-    /// Differently from `[Index.tracks_count]`, it does not require indexing
-    /// the entire media file first.
+    /// Differently from [`Index.tracks_count`](Index::tracks_count),
+    /// it does not require indexing the entire media file first.
     pub fn tracks_count(&self) -> usize {
         self.1
     }
 
     /// Returns the track type associated with the input track number.
     ///
-    /// Differently from `[Index.track_type]`, it does not require indexing
-    /// the entire media file first.
+    /// Differently from [`Index.first_track_type`](Index::first_track_type),
+    /// it does not require indexing the entire media file first.
     ///
     /// If an indexed file has already been created, it is recommended to use
-    /// the `[Index.track_type]` method, since the indexer is destructed when a
-    /// a new `[Index]` instance is created.
+    /// the [`Index.first_track_type`](Index::first_track_type) method,
+    /// since the indexer is destructed when a new [`Index`]
+    /// instance is created.
     ///
     /// Returns an error when a wrong track number is passed.
     pub fn track_type(&self, track: usize) -> Result<TrackType> {
@@ -439,7 +440,7 @@ impl Indexer {
 
     /// Runs the actual indexing process.
     ///
-    /// This function destroys the `[Indexer]` and frees the allocated memory,
+    /// This function destroys the [`Indexer`] and frees the allocated memory,
     /// even when the indexing process fails for any reason.
     pub fn do_indexing(
         &self,
@@ -501,7 +502,8 @@ impl Indexer {
     /// If an audio track type is passed as input, it enables dumping the
     /// decoded audio during the indexing process.
     ///
-    /// Returns an error when an `[Unknown]` track type is passed.
+    /// Returns an error when a [`TrackType.Unknown`](TrackType::Unknown)
+    /// track type is passed.
     pub fn enable_track_type(self, track_type: TrackType) -> Result<Self> {
         if matches!(track_type, TrackType::Unknown) {
             return Err(Error::UnknownTrackType);
@@ -524,7 +526,8 @@ impl Indexer {
     /// If an audio track type is passed as input, it disables dumping the
     /// decoded audio during the indexing process.
     ///
-    /// Returns an error when an `[Unknown]` track type is passed.
+    /// Returns an error when a [`TrackType.Unknown`](TrackType::Unknown)
+    /// track type is passed.
     pub fn disable_track_type(self, track_type: TrackType) -> Result<Self> {
         if matches!(track_type, TrackType::Unknown) {
             return Err(Error::UnknownTrackType);
@@ -548,13 +551,13 @@ impl Indexer {
     /// progress. It also offers the chance to interrupt indexing.
     ///
     /// Callback function's arguments are:
-    /// - current: the current progress percentage
-    /// - total: the maximum progress percentage
-    /// - fixed percentage: an optional value which can be passed to the
+    /// - **current**: the current progress percentage
+    /// - **total**: the maximum progress percentage
+    /// - **fixed percentage**: an optional value which can be passed to the
     ///   function in order to modify the progress process.
     ///
-    /// The indexing progress is usually calculated
-    /// dividing `current` by `total`.
+    /// The indexing progress is usually calculated dividing
+    /// `current` by `total`.
     pub fn progress_callback<F>(&self, callback: F, value: &mut usize)
     where
         F: FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,

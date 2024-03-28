@@ -308,7 +308,7 @@ pub struct Frame {
 }
 
 impl Frame {
-    /// Decodes and returns the `[Frame]` data associated with the input frame
+    /// Decodes and returns the [`Frame`] data associated with the input frame
     /// number from the given video source.
     ///
     /// This method is not thread-safe, so it can retrieve only one frame
@@ -340,7 +340,7 @@ impl Frame {
         }
     }
 
-    /// Decodes and returns the `[Frame]` data associated with the input
+    /// Decodes and returns the [`Frame`] data associated with the input
     /// timestamp, in seconds, from the given video source.
     ///
     /// This method will retrieve the frame that starts closest to the input
@@ -384,9 +384,9 @@ impl Frame {
     /// Returns all supported frame planes.
     ///
     /// When a plane cannot be retrieved for whatever reason,
-    /// a `None` array value is returned.
+    /// a [`None`] array value is returned.
     ///
-    /// When an internal error occurs, `None` is returned.
+    /// When an internal error occurs, [`None`] is returned.
     /*pub fn planes(&self) -> Option<[Option<&[u8]>; PLANES_NUMBER]> {
         let mut planes: [Option<&[u8]>; PLANES_NUMBER] = Default::default();
 
@@ -425,9 +425,9 @@ impl Frame {
         Some(planes)
     }*/
 
-    /// Returns the possible `Dolby Vision RPU` data contained in a frame.
+    /// Returns the possible **Dolby Vision RPU** data contained in a frame.
     ///
-    /// When no data is available, `None` is returned.
+    /// When no data is available, [`None`] is returned.
     pub fn dolby_vision_rpu(&self) -> Option<&[u8]> {
         if self.frame.DolbyVisionRPU.is_null() {
             return None;
@@ -440,9 +440,9 @@ impl Frame {
         }
     }
 
-    /// Returns the possible `HDR10+` dynamic metadata contained in a frame.
+    /// Returns the possible **HDR10+** dynamic metadata contained in a frame.
     ///
-    /// When no metadata is available, `None` is returned.
+    /// When no metadata is available, [`None`] is returned.
     pub fn hdr10_plus(&self) -> Option<&[u8]> {
         if self.frame.HDR10Plus.is_null() {
             return None;
