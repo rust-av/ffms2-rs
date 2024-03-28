@@ -37,8 +37,8 @@ pub enum SeekMode {
     Normal,
     /// Unsafe normal mode.
     ///
-    /// Same as `Normal` mode, but no error will be thrown when the exact
-    /// destination has to be guessed.
+    /// Same as [`Normal`](Self::Normal) mode, but no error will be
+    /// thrown when the exact destination has to be guessed.
     Unsafe,
     /// Aggressive mode.
     ///
@@ -62,7 +62,7 @@ impl SeekMode {
     }
 }
 
-/// Pixel type packaging for a stereoscopic 3D video source.
+/// Pixel type packaging for a stereoscopic **3D** video source.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Stereo3DType {
     /// Unknown type.
@@ -158,7 +158,7 @@ impl Stereo3DType {
     }
 }
 
-/// Flags for a stereoscopic 3D video source.
+/// Flags for a stereoscopic **3D** video source.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Stereo3DFlags {
     /// Unknown flag.
@@ -181,7 +181,7 @@ impl Stereo3DFlags {
     }
 }
 
-/// Valid range of luma values for a YUV video source.
+/// Valid range of luma values for a `YUV` video source.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum ColorRange {
     /// The range is not specified.
@@ -189,13 +189,13 @@ pub enum ColorRange {
     Unspecified,
     /// TV range, also known as limited range.
     ///
-    /// Range of luma values: [16, 235].
-    /// Bit-depth: 8-bit
+    /// Range of luma values: `[16, 235]`.
+    /// Bit-depth: `8-bit`
     Mpeg,
     /// PC range, also known as full range.
     ///
-    /// Range of luma values: [0, 255].
-    /// Bit-depth: 8-bit.
+    /// Range of luma values: `[0, 255]`.
+    /// Bit-depth: `8-bit`.
     Jpeg,
 }
 
@@ -248,7 +248,8 @@ pub enum Flip {
 /// be considered reliable for old containers formats such as AVI.
 ///
 /// It would be better to generate individual frame timestamps based on
-/// the `[Frame.pts]` value instead of using this field.
+/// the [`FrameInfo.pts`](crate::frame::FrameInfo::pts) value
+/// instead of using this field.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct FrameRate {
     /// Frame rate numerator.
@@ -257,12 +258,12 @@ pub struct FrameRate {
     pub denominator: usize,
 }
 
-/// Repeat First Field (RFF) timebase associated with a MPEG video source.
+/// **Repeat First Field (RFF)** timebase associated with a _MPEG_ video source.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct RFFTimebase {
-    /// RFF timebase numerator.
+    /// **RFF** timebase numerator.
     pub numerator: usize,
-    /// RFF timebase denominator.
+    /// **RFF** timebase denominator.
     pub denominator: usize,
 }
 
@@ -300,7 +301,8 @@ pub struct Crop {
 pub struct VideoProperties {
     /// Frame rate associated with a video source.
     pub frame_rate: FrameRate,
-    /// Repeat First Field (RFF) timebase associated with a MPEG video source.
+    /// **Repeat First Field (RFF)** timebase associated with a
+    /// _MPEG_ video source.
     pub rff_timebase: RFFTimebase,
     /// Number of frames in a video source.
     pub frames_count: usize,
@@ -324,7 +326,7 @@ pub struct VideoProperties {
     pub last_time: f64,
     /// Video source rotation in degrees.
     pub rotation: usize,
-    /// Pixel type format for a stereoscopic 3D video source.
+    /// Pixel type format for a stereoscopic **3D** video source.
     pub stereo3d_type: Stereo3DType,
     /// Flags for a stereoscopic 3D video source.
     pub stereo3d_flags: Stereo3DFlags,
@@ -353,10 +355,10 @@ pub struct VideoProperties {
     /// source content are accessible.
     pub has_mastering_display_luminance: bool,
     /// Minimum luminance of the display used to master a video
-    /// source content in cd/m^2.
+    /// source content in `cd/m^2`.
     pub mastering_display_min_luminance: f64,
     /// Maximum luminance of the display used to master a video
-    /// source content in cd/m^2.
+    /// source content in `cd/m^2`.
     pub mastering_display_max_luminance: f64,
     /// Whether a video source content has maximum and average light levels.
     /// Both of these values are measured over the duration of the content.
@@ -364,9 +366,9 @@ pub struct VideoProperties {
     /// A receiver can use this information to adjust the content light
     /// levels so that they match the capability of the current display.
     pub has_content_light_level: bool,
-    /// Maximum light level of a video source content in cd/m^2.
+    /// Maximum light level of a video source content in `cd/m^2`.
     pub content_light_level_max: usize,
-    /// Average light level of a video source content in cd/m^2.
+    /// Average light level of a video source content in `cd/m^2`.
     pub content_light_level_average: usize,
     /// Flip direction to be applied to a frame before a rotation.
     pub flip: Flip,
@@ -375,7 +377,7 @@ pub struct VideoProperties {
 /// Video source manager.
 ///
 /// Among its functionalities:
-/// - Opening a video source which must be indexed first through `[Index]`
+/// - Opening a video source which must be indexed first through [`Index`]
 /// - Retrieving video frames data
 /// - Setting data format for an output video source
 pub struct VideoSource(*mut ffms2_sys::FFMS_VideoSource);
@@ -383,7 +385,7 @@ pub struct VideoSource(*mut ffms2_sys::FFMS_VideoSource);
 unsafe impl Send for VideoSource {}
 
 impl VideoSource {
-    /// Creates a new `[VideoSource]` instance.
+    /// Creates a new [`VideoSource`] instance.
     pub fn new(
         source_file: &Path,
         track_number: usize,
@@ -486,13 +488,13 @@ impl VideoSource {
     /// Overrides the video source color space.
     ///
     /// This method is intended primarily for compatibility with programs which
-    /// use the wrong YUV color space when converting to or from RGB, but it can
-    /// also be useful for files which have incorrect color space flags.
+    /// use the wrong `YUV` color space when converting to or from RGB, but
+    /// it can also be useful for files which have incorrect color space flags.
     ///
     /// Values passed to this functions are not checked for sanity.
-    /// For example, RGB files can be treated as if they are actually YUV files
-    /// using this method, but even if this approach works, it does not produce
-    /// useful results.
+    /// For example, `RGB` files can be treated as if they are actually `YUV`
+    /// files using this method, but even if this approach works,
+    /// it does not produce useful results.
     pub fn set_input_format(
         &self,
         color_space: PixelFormat,
@@ -527,7 +529,7 @@ impl VideoSource {
 
     /// Sets the color space and frame dimensions to be used for
     /// output video source frames.
-    /// For example, tt can be used to convert a video source to
+    /// For example, it can be used to convert a video source to
     /// greyscale or monochrome.
     pub fn set_output_format(
         &self,

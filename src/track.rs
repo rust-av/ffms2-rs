@@ -108,7 +108,7 @@ impl Track {
 
     /// Builds a new [`Track`] from a video source.
     ///
-    /// The [`TrackType`] is `Video`.
+    /// The track type is [`Video`](TrackType::Video).
     pub fn from_video(video_source: &mut VideoSource) -> Result<Self> {
         let track = unsafe {
             ffms2_sys::FFMS_GetTrackFromVideo(video_source.as_mut_ptr())
@@ -118,7 +118,7 @@ impl Track {
 
     /// Builds a new [`Track`] from an audio source.
     ///
-    /// The [`TrackType`] is `Audio`.
+    /// The track type is [`Audio`](TrackType::Audio).
     pub fn from_audio(audio_source: &mut AudioSource) -> Result<Self> {
         let track = unsafe {
             ffms2_sys::FFMS_GetTrackFromAudio(audio_source.as_mut_ptr())

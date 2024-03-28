@@ -107,7 +107,7 @@ pub enum PixelFormat {
     YUV444P16LE,
     /// Planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
     YUV444P16BE,
-    /// HW decoding through DXVA2, Picture.data[3] contains a LPDIRECT3DSURFACE9 pointer
+    /// HW decoding through DXVA2
     DXVA2_VLD,
     /// Packed RGB 4:4:4, 16bpp, (msb)4X 4R 4G 4B(lsb), little-endian, X=unused/undefined
     RGB444LE,
@@ -207,7 +207,7 @@ pub enum PixelFormat {
     YUVA444P16BE,
     /// Planar YUV 4:4:4 64bpp, (1 Cr & Cb sample per 1x1 Y & A samples, little-endian)
     YUVA444P16LE,
-    /// HW acceleration through VDPAU, Picture.data[3] contains a VdpVideoSurface
+    /// HW acceleration through VDPAU
     VDPAU,
     /// Packed XYZ 4:4:4, 36 bpp, (msb) 12X, 12Y, 12Z (lsb), the 2-byte value for each X/Y/Z is stored as little-endian, the 4 lower bits are set to 0
     XYZ12LE,
@@ -243,7 +243,7 @@ pub enum PixelFormat {
     QSV,
     /// MMAL
     MMAL,
-    /// HW decoding through Direct3D11 via old API, Picture.data[3] contains a ID3D11VideoDecoderOutputView pointer
+    /// HW decoding through Direct3D11 via old API
     D3D11VA_VLD,
     /// CUDA
     CUDA,

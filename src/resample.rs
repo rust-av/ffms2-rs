@@ -8,7 +8,7 @@ use crate::audio::AudioChannel;
 /// Surround Sound Matrix Encoding.
 ///
 /// Matrix encoding is an audio technique which transforms N-channel signals to
-/// M-channel signals, where N > M, enabling the same audio content to be
+/// M-channel signals, where `N > M`, enabling the same audio content to be
 /// played on different systems.
 #[derive(Clone, Copy, Debug, Default)]
 pub enum MatrixEncoding {
@@ -134,7 +134,8 @@ pub enum ResampleFilterType {
     ///
     /// The input parameter is the beta value for Kaiser window.
     ///
-    /// Must be a double float value in the interval [2,16], default value is 9.
+    /// Must be a double float value in the interval `[2,16]`,
+    /// default value is `9`.
     Kaiser(usize),
 }
 
@@ -246,11 +247,11 @@ impl MixingCoefficientType {
 pub struct ResampleOptions {
     /// Audio stream channel layout.
     ///
-    /// If `None`, no channel layout has been found.
+    /// If [`None`], no channel layout has been found.
     pub channel_layout: Option<Vec<AudioChannel>>,
     /// Audio stream sample format.
     ///
-    /// If `None`, no sample format has been found.
+    /// If [`None`], no sample format has been found.
     pub sample_format: Option<SampleFormat>,
     /// Audio stream sample rate.
     pub sample_rate: usize,
@@ -258,29 +259,33 @@ pub struct ResampleOptions {
     pub mixing_coefficient_type: MixingCoefficientType,
     /// Center Mix Level.
     ///
-    /// It is a value expressed in dB, and must be in the interval [-32,32].
+    /// It is a value expressed in `dB`, and must be in
+    /// the interval `[-32, 32]`.
     pub center_mix_level: f64,
     /// Surround Mix Level.
     ///
-    /// It is a value expressed in dB, and must be in the interval [-32,32].
+    /// It is a value expressed in `dB`, and must be in
+    /// the interval `[-32, 32]`.
     pub surround_mix_level: f64,
-    /// Low Frequency Effects (LFE) mix into non LFE level.
+    /// **Low Frequency Effects (LFE)** mix into non LFE level.
     ///
     /// It is used when there is a LFE input, but no LFE output.
     ///
-    /// It is a value expressed in dB, and must be in the interval [-32,32].
+    /// It is a value expressed in `dB`, and must be in
+    /// the interval `[-32, 32]`.
     pub lfe_mix_level: f64,
     /// Mix level normalization.
     pub normalize: usize,
     /// Force resampling.
     pub force_resample: bool,
-    /// Length of each FIR filter in the resampling filterbank relative to the
-    /// cutoff frequency.
+    /// Length of each **FIR** filter in the resampling filter bank relative
+    /// to the cutoff frequency.
     pub filter_size: usize,
     /// Binary logarithm of the number of entries in the
-    /// resampling polyphase filterbank.
+    /// resampling polyphase filter bank.
     pub phase_shift: usize,
-    /// If `true`, then the resampling FIR filter will be linearly interpolated.
+    /// If [`true`], then the resampling **FIR** filter will be
+    /// linearly interpolated.
     pub linear_interpolation: bool,
     /// Resampling cutoff frequency.
     pub cutoff_frequency_ratio: f64,
