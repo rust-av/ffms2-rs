@@ -8,7 +8,7 @@ use std::ffi::CString;
 use std::os::raw::c_void;
 use std::path::Path;
 
-use ffms2_sys::FFMS_IndexErrorHandling;
+use ffms2_sys::{FFMS_Index, FFMS_IndexErrorHandling, FFMS_Indexer};
 
 use crate::error::{Error, InternalError, Result};
 use crate::track::TrackType;
@@ -71,7 +71,7 @@ impl fmt::Display for IndexErrorHandling {
 /// Among the functionalities:
 /// - Reading and writing the content of the file
 /// - Extract indexing information starting from tracks given as input.
-pub struct Index(*mut ffms2_sys::FFMS_Index, Vec<u8>);
+pub struct Index(*mut ffms2_sys::FFMS_Index, Vec<u8>, usize);
 
 unsafe impl Send for Index {}
 
@@ -83,6 +83,10 @@ impl Index {
     /// as they were written with. Attempting to open an index file written with
     /// a different `ffsm2` version produces an index mismatch error.
     pub fn new(index_file: &Path) -> Result<Self> {
+        if index_file.is_file() {
+            return Err(Error::NotAFile);
+        }
+
         let source =
             CString::new(index_file.to_str().ok_or(Error::StrConversion)?)?;
         let mut error = InternalError::new();
@@ -93,7 +97,7 @@ impl Index {
         if index.is_null() {
             Err(error.into())
         } else {
-            Ok(Index(index, Vec::new()))
+            Ok(Self::create_index(index))
         }
     }
 
@@ -123,7 +127,7 @@ impl Index {
         if index.is_null() {
             Err(error.into())
         } else {
-            Ok(Index(index, Vec::new()))
+            Ok(Self::create_index(index))
         }
     }
 
@@ -138,6 +142,10 @@ impl Index {
     /// - Comparing the two filenames, which is usually a not very reliable
     ///   operation.
     pub fn belongs_to_file(&self, source_file: &Path) -> Result<bool> {
+        if source_file.is_file() {
+            return Err(Error::NotAFile);
+        }
+
         let source =
             CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
         let mut error = InternalError::new();
@@ -166,6 +174,10 @@ impl Index {
     /// with very large files or with those files containing a lot of
     /// audio tracks, since both of them can take quite a lot to index.
     pub fn write_to_file(&self, source_file: &Path) -> Result<()> {
+        if source_file.is_file() {
+            return Err(Error::NotAFile);
+        }
+
         let source =
             CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
 
@@ -186,7 +198,7 @@ impl Index {
     }
 
     /// Writes the indexing information to a memory bytes buffer.
-    pub fn write_to_buffer(&mut self) -> Result<&Vec<u8>> {
+    pub fn write_to_buffer(&mut self) -> Result<&[u8]> {
         let mut error = InternalError::new();
         let mut size = 0;
         let err = unsafe {
@@ -247,12 +259,21 @@ impl Index {
     }
 
     /// Returns the number of tracks contained in a given index file.
+    #[inline(always)]
     pub fn tracks_count(&self) -> usize {
-        unsafe { ffms2_sys::FFMS_GetNumTracks(self.0) as usize }
+        self.2
     }
 
-    pub(crate) fn as_mut_ptr(&self) -> *mut ffms2_sys::FFMS_Index {
+    #[inline(always)]
+    pub(crate) fn as_mut_ptr(&self) -> *mut FFMS_Index {
         self.0
+    }
+
+    #[inline(always)]
+    fn create_index(index: *mut FFMS_Index) -> Self {
+        let track_count =
+            unsafe { ffms2_sys::FFMS_GetNumTracks(index) as usize };
+        Self(index, Vec::new(), track_count)
     }
 }
 
@@ -277,7 +298,7 @@ impl Drop for Index {
 ///
 /// An indexer also provides a series of methods to query for information about
 /// a media file.
-pub struct Indexer(*mut ffms2_sys::FFMS_Indexer);
+pub struct Indexer(*mut ffms2_sys::FFMS_Indexer, usize);
 
 unsafe impl Send for Indexer {}
 
@@ -288,6 +309,10 @@ impl Indexer {
     /// By default, all video tracks present in a media file are indexed,
     /// while all audio tracks are not.
     pub fn new(source_file: &Path) -> Result<Self> {
+        if source_file.is_file() {
+            return Err(Error::NotAFile);
+        }
+
         let source =
             CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
 
@@ -299,7 +324,7 @@ impl Indexer {
         if indexer.is_null() {
             Err(error.into())
         } else {
-            Ok(Indexer(indexer))
+            Ok(Self::create_indexer(indexer))
         }
     }
 
@@ -312,6 +337,10 @@ impl Indexer {
         source_file: &Path,
         demuxer_options: HashMap<String, String>,
     ) -> Result<Self> {
+        if source_file.is_file() {
+            return Err(Error::NotAFile);
+        }
+
         let source =
             CString::new(source_file.to_str().ok_or(Error::StrConversion)?)?;
         let number_options = demuxer_options.len();
@@ -343,7 +372,7 @@ impl Indexer {
         if indexer.is_null() {
             Err(error.into())
         } else {
-            Ok(Indexer(indexer))
+            Ok(Self::create_indexer(indexer))
         }
     }
 
@@ -375,7 +404,7 @@ impl Indexer {
     /// Differently from `[Index.tracks_count]`, it does not require indexing
     /// the entire media file first.
     pub fn tracks_count(&self) -> usize {
-        unsafe { ffms2_sys::FFMS_GetNumTracksI(self.0) as usize }
+        self.1
     }
 
     /// Returns the track type associated with the input track number.
@@ -429,7 +458,7 @@ impl Indexer {
         if index.is_null() {
             Err(error.into())
         } else {
-            Ok(Index(index, Vec::new()))
+            Ok(Index::create_index(index))
         }
     }
 
@@ -578,5 +607,12 @@ impl Indexer {
                 Box::into_raw(ic_private) as *mut c_void,
             )
         }
+    }
+
+    #[inline(always)]
+    fn create_indexer(indexer: *mut FFMS_Indexer) -> Self {
+        let track_count =
+            unsafe { ffms2_sys::FFMS_GetNumTracksI(indexer) as usize };
+        Self(indexer, track_count)
     }
 }

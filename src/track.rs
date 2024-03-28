@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::path::Path;
 
 use std::ffi::CString;
@@ -87,7 +86,7 @@ pub struct TrackTimebase {
 /// A track contains all information associated to a given multimedia stream.
 ///
 /// It does not contain any index information.
-pub struct Track(*mut ffms2_sys::FFMS_Track);
+pub struct Track(*mut ffms2_sys::FFMS_Track, usize);
 
 unsafe impl Send for Track {}
 
@@ -155,11 +154,17 @@ impl Track {
     }
 
     /// Returns the information on the indexed frame passed as input.
-    pub fn frame_info(&self, frame: usize) -> FrameInfo {
+    ///
+    /// Whether the indexed frame is invalid, an error is returned.
+    pub fn frame_info(&self, frame: usize) -> Result<FrameInfo> {
+        if frame > self.1 {
+            return Err(Error::Frames);
+        }
+
         let res_frame =
             unsafe { ffms2_sys::FFMS_GetFrameInfo(self.0, frame as i32) };
         let ref_frame = unsafe { *res_frame };
-        FrameInfo::new(ref_frame)
+        Ok(FrameInfo::new(ref_frame))
     }
 
     /// Returns the track timebase information.
@@ -186,15 +191,8 @@ impl Track {
     /// This value is:
     /// - the number of video frames for a video track
     /// - the number of packets for an audio track
-    ///
-    /// An error indicates the track has not been indexed.
-    pub fn frames_count(&self) -> Result<usize> {
-        let num_frames = unsafe { ffms2_sys::FFMS_GetNumFrames(self.0) };
-        if num_frames < 0 {
-            Err(Error::Frames)
-        } else {
-            Ok(num_frames as usize)
-        }
+    pub fn frames_count(&self) -> usize {
+        self.1
     }
 
     fn evaluate_track(track: *mut ffms2_sys::FFMS_Track) -> Result<Self> {
@@ -202,7 +200,7 @@ impl Track {
         if num_frames < 0 {
             Err(Error::Track)
         } else {
-            Ok(Self(track))
+            Ok(Self(track, num_frames as usize))
         }
     }
 }

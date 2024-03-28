@@ -539,7 +539,7 @@ impl VideoSource {
         let mut error = InternalError::new();
 
         let mut colorspaces = colorspaces
-            .into_iter()
+            .iter()
             .map(|colorspace| *colorspace as i32)
             .collect::<Vec<i32>>();
 
@@ -574,6 +574,7 @@ impl VideoSource {
         }
     }
 
+    #[inline(always)]
     pub(crate) fn as_mut_ptr(&mut self) -> *mut ffms2_sys::FFMS_VideoSource {
         self.0
     }
