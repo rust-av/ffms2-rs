@@ -33,7 +33,7 @@ pub enum SeekMode {
     Linear,
     /// Safe normal mode.
     ///
-    /// Seeking decisions are based on the keyframe positions.
+    /// Seeking decisions are based on the key frame positions.
     Normal,
     /// Unsafe normal mode.
     ///
@@ -42,10 +42,10 @@ pub enum SeekMode {
     Unsafe,
     /// Aggressive mode.
     ///
-    /// It seeks in the forward direction even if no closer keyframe is known
+    /// It seeks in the forward direction even if no closer key frame is known
     /// to exist.
     ///
-    /// Only useful for testing purposes and those containers whose keyframes
+    /// Only useful for testing purposes and those containers whose key frames
     /// are not reported properly.
     Aggressive,
 }

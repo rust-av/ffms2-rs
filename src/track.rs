@@ -24,15 +24,15 @@ pub enum TrackType {
     Audio,
     /// A stream of bytes.
     ///
-    /// Not supported by ffms2.
+    /// Not supported by `ffms2`.
     Data,
     /// A subtitle stream.
     ///
-    /// Not supported by ffms2,
+    /// Not supported by `ffms2`.
     Subtitle,
     /// Attachment stream.
     ///
-    /// Not supported by ffms2.
+    /// Not supported by `ffms2`.
     Attachment,
 }
 
@@ -72,10 +72,10 @@ impl TrackType {
 /// This information are only meaningful for video tracks.
 ///
 /// The rational number obtained dividing the `numerator` and `denominator`
-/// fields of this structure might occasionally be equal to`1/framerate`
-/// for some CFR video tracks.
-/// However, this similarity has no relation whatsoever with the video framerate
-/// and it is not related at all with any framerate concept.
+/// fields of this structure might occasionally be equal to `1/framerate`
+/// for some **Constant Frame Rate (CFR)** video tracks.
+/// However, this similarity has no relation whatsoever with the video frame
+/// rate and it is not related at all with any frame rate concept.
 pub struct TrackTimebase {
     /// Timebase numerator.
     pub numerator: usize,
@@ -91,7 +91,7 @@ pub struct Track(*mut ffms2_sys::FFMS_Track, usize);
 unsafe impl Send for Track {}
 
 impl Track {
-    /// Builds a `[Track]` from the given `[Index]` and track number.
+    /// Builds a [`Track`] from the given [`Index`] and track number.
     pub fn from_index(index: &Index, track_number: usize) -> Result<Self> {
         if track_number > index.tracks_count() - 1 {
             return Err(Error::WrongTrack);
@@ -106,9 +106,9 @@ impl Track {
         Self::evaluate_track(track)
     }
 
-    /// Builds a new `[Track]` from a video source.
+    /// Builds a new [`Track`] from a video source.
     ///
-    /// The `[TrackType]` is `Video`.
+    /// The [`TrackType`] is `Video`.
     pub fn from_video(video_source: &mut VideoSource) -> Result<Self> {
         let track = unsafe {
             ffms2_sys::FFMS_GetTrackFromVideo(video_source.as_mut_ptr())
@@ -116,9 +116,9 @@ impl Track {
         Self::evaluate_track(track)
     }
 
-    /// Builds a new `[Track]` from an audio source.
+    /// Builds a new [`Track`] from an audio source.
     ///
-    /// The `[TrackType]` is `Audio`.
+    /// The [`TrackType`] is `Audio`.
     pub fn from_audio(audio_source: &mut AudioSource) -> Result<Self> {
         let track = unsafe {
             ffms2_sys::FFMS_GetTrackFromAudio(audio_source.as_mut_ptr())
@@ -126,7 +126,7 @@ impl Track {
         Self::evaluate_track(track)
     }
 
-    /// Writes `Matroska` v2 timecodes for the track in a file.
+    /// Writes **Matroska v2** timecodes for the track in a file.
     ///
     /// Only meaningful for video tracks.
     pub fn write_timecodes(&self, timecode_file: &Path) -> Result<()> {

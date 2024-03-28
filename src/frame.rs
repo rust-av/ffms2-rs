@@ -73,6 +73,7 @@ impl Resizers {
 /// overlapped to the right scheme, but this is not possible due to
 /// text limitations.
 ///
+/// ```text
 ///                  a   b         c   d
 ///                  v   v         v   v
 ///                  ______        ______
@@ -80,23 +81,22 @@ impl Resizers {
 ///                 |             |1 2
 /// 2nd luma line > |X   X ...    |5 6 X ...
 ///
-/// *X*: _luma samples_
+/// ```
 ///
-/// # Chroma locations
+/// # Symbols Description
+/// - **X**: luma samples
+/// - **a** = 1st horizontal luma sample location
+/// - **b** = 2nd horizontal luma sample location
+/// - **c** = 1st top-left chroma sample location
+/// - **d** = 2nd horizontal luma sample location
 ///
-/// - *1* = _Left_
-/// - *2* = _Center_
-/// - *3* = _Top-left_
-/// - *4* = _Top_
-/// - *5* = _Bottom-left_
-/// - *6* = _Bottom_
-///
-/// # Samples descriptions
-///
-/// - *a* = _1st horizontal luma sample location_
-/// - *b* = _2nd horizontal luma sample location_
-/// - *c* = _1st top-left chroma sample location_
-/// - *d* = _2nd horizontal luma sample location_
+/// # Chroma Locations
+/// - **1** = Left
+/// - **2** = Center
+/// - **3** = Top-left
+/// - **4** = Top
+/// - **5** = Bottom-left
+/// - **6** = Bottom
 #[derive(Clone, Copy, Debug, Default)]
 pub enum ChromaLocation {
     /// Unspecified location.
@@ -112,7 +112,7 @@ pub enum ChromaLocation {
     Center,
     /// Top-left.
     ///
-    /// ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2.
+    /// ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), MPEG-2 4:2:2.
     TopLeft,
     /// Top.
     Top,
@@ -143,18 +143,19 @@ impl ChromaLocation {
 pub struct FrameInfo {
     /// The decoding timestamp of a frame.
     ///
-    /// To convert this to a timestamp in clock milliseconds, use:
+    /// To convert this timestamp into one expressed in `clock milliseconds`,
+    /// use the following formula:
     ///
-    /// (`[FrameInfo.pts]` * `[TrackTimebase.numerator]`) / `[TrackTimebase.denominator]`.
+    /// (`pts` * [`TrackTimebase.numerator`](crate::track::TrackTimebase::numerator))
+    /// / [`TrackTimebase.denominator`](crate::track::TrackTimebase::denominator)
     pub pts: u64,
-    /// Repeat First Field (RFF) flag for a MPEG frame.
+    /// **Repeat First Field (RFF)** flag for a _MPEG_ frame.
     ///
-    /// A frame must be displayed for `1 + repeat_picture` time units,
-    /// where the time units are expressed in the special
-    /// `[VideoSource.RFFTimebase]`.
+    /// A frame must be displayed on screen for `1 + repeat_picture` time units
+    /// which are expressed in [`RFFTimebase`](crate::video::RFFTimebase).
     ///
-    /// Usual timestamps must be ignored since since they are fundamentally
-    /// incompatible with RFF data.
+    /// Usual timestamps **must** be ignored because they are fundamentally
+    /// incompatible with the **RFF** timestamps.
     pub repeat_picture: usize,
     /// Whether a frame is a keyframe.
     pub keyframe: bool,
@@ -164,7 +165,7 @@ pub struct FrameInfo {
     /// behavior might break some kind of video sources.
     ///
     /// This field should be used when a video source presents discontinuous
-    /// timestamps such as Variable Frame Rate (VFR) formats.
+    /// timestamps such as **Variable Frame Rate (VFR)** formats.
     pub original_pts: usize,
 }
 
@@ -188,15 +189,15 @@ pub struct FrameResolution {
     pub height: usize,
 }
 
+/// Video frame data.
 #[derive(Debug)]
 pub struct Frame {
     /// The length in bytes of each frame plane scan line. The number of scan
-    /// lines is equal to the number of frame planes, thus `PLANES_COUNT`.
+    /// lines is equal to the number of frame planes, thus [`PLANES_COUNT`].
     ///
-    /// The total size in bytes of a frame plane is obtained with the following
-    /// computation:
+    /// The total size in bytes of the i-th frame plane is obtained in this way:
     ///
-    /// `linesize[i]` * `[VideoProperties.height]`
+    /// `linesize[i]` * [`FrameResolution.height`](FrameResolution::height)
     ///
     /// Some pixel formats though, most notably `YV12`, have vertical chroma
     /// subsampling, and then the U/V planes may be of a different height than
@@ -229,36 +230,35 @@ pub struct Frame {
     pub converted_pixel_format: PixelFormat,
     /// Whether a frame is a keyframe.
     pub keyframe: usize,
-    /// Repeat First Field (RFF) flag for a MPEG frame.
+    /// **Repeat First Field (RFF)** flag for a _MPEG_ frame.
     ///
-    /// A frame must be displayed for `1 + repeat_picture` time units,
-    /// where the time units are expressed in the special
-    /// `[VideoSource.RFFTimebase]`.
+    /// A frame must be displayed on screen for `1 + repeat_picture` time units
+    /// which are expressed in [`RFFTimebase`](crate::video::RFFTimebase).
     ///
-    /// Usual timestamps must be ignored since since they are fundamentally
-    /// incompatible with RFF data.
+    /// Usual timestamps **must** be ignored because they are fundamentally
+    /// incompatible with the **RFF** timestamps.
     pub repeat_picture: usize,
     /// Whether a frame has been coded as interlaced.
     pub interlaced_frame: bool,
     /// Whether a frame has the top field first, otherwise it has the bottom
     /// field first.
     ///
-    /// Only relevant when [`interlaced_frame`] is `true`.
+    /// Only relevant when [`interlaced_frame`](Self::interlaced_frame) is [`true`].
     pub top_field_first: bool,
     /// Compressed frame coding type.
     ///
-    /// - I: Intra
-    /// - P: Predicted
-    /// - B: Bi-dir predicted
-    /// - S: S(GMC)-VOP MPEG4
-    /// - i: Switching Intra
-    /// - p: Switching Predicted
-    /// - b: FF_BI_TYPE
-    /// - ?: Unknown
+    /// - **I**: Intra
+    /// - **P**: Predicted
+    /// - **B**: Bi-dir predicted
+    /// - **S**: S(GMC)-VOP MPEG4
+    /// - **i**: Switching Intra
+    /// - **p**: Switching Predicted
+    /// - **b**: FF_BI_TYPE
+    /// - **?**: Unknown
     pub picture_type: char,
-    /// YUV color space.
+    /// `YUV` color space.
     pub color_space: PixelFormat,
-    /// Valid range of luma values for a YUV video source.
+    /// Valid range of luma values for a `YUV` video source.
     pub color_range: ColorRange,
     /// Frame color primaries.
     pub color_primaries: usize,
@@ -289,10 +289,10 @@ pub struct Frame {
     /// source content are accessible.
     pub has_mastering_display_luminance: bool,
     /// Minimum luminance of the display used to master a video
-    /// source content in cd/m^2.
+    /// source content in `cd/m^2`.
     pub mastering_display_min_luminance: f64,
     /// Maximum luminance of the display used to master a video
-    /// source content in cd/m^2.
+    /// source content in `cd/m^2`.
     pub mastering_display_max_luminance: f64,
     /// Whether a video source content has maximum and average light levels.
     /// Both of these values are measured over the duration of the content.
@@ -300,9 +300,9 @@ pub struct Frame {
     /// A receiver can use this information to adjust the content light
     /// levels so that they match the capability of the current display.
     pub has_content_light_level: bool,
-    /// Maximum light level of a video source content in cd/m^2.
+    /// Maximum light level of a video source content in `cd/m^2`.
     pub content_light_level_max: usize,
-    /// Average light level of a video source content in cd/m^2.
+    /// Average light level of a video source content in `cd/m^2`.
     pub content_light_level_average: usize,
     frame: FFMS_Frame,
 }

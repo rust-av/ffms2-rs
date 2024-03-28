@@ -103,11 +103,11 @@ impl InternalError {
     }
 }
 
-/// FFMS2 error types
+/// All error types.
 #[derive(Debug, Error)]
 pub enum Error {
-    /// An FFMS2 API error.
-    #[error("FFSM2 API error.")]
+    /// A `ffms2` API error.
+    #[error("ffms2 API error.")]
     FFMS2(borrow::Cow<'static, str>),
     /// The path is not a file.
     #[error("The path is not a file.")]
@@ -139,13 +139,13 @@ pub enum Error {
     /// Wrong timestamp.
     #[error("Wrong timestamp.")]
     WrongTimestamp,
-    /// Failure in converting an operating system string into a str.
+    /// Failure in converting an operating system string into a [`&str`].
     #[error("str convervion error.")]
     StrConversion,
-    /// Failure in creating a CString.
+    /// Failure in creating a [`CString`](std::ffi::CString).
     #[error("Failed to create a CString")]
     CString(#[from] std::ffi::NulError),
-    /// Failure in converting a CString into a String.
+    /// Failure in converting a [`CString`](std::ffi::CString) into a [`String`].
     #[error("Failed to convert a CString into a String")]
     StringConversion(#[from] std::ffi::IntoStringError),
 }
@@ -162,5 +162,5 @@ impl From<InternalError> for Error {
     }
 }
 
-/// A specialized `Result` type.
+/// A specialized [`Result`] type.
 pub type Result<T> = ::std::result::Result<T, Error>;
