@@ -16,6 +16,7 @@ use crate::resample::{ResampleOptions, SampleFormat};
 /// Audio channel layout of an audio stream.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AudioChannel {
+    /// Unknown channel.
     Unknown,
     /// Front left.
     FrontLeft,
@@ -226,7 +227,7 @@ impl AudioDelay {
 pub struct AudioProperties {
     /// Audio sample format.
     ///
-    /// If `None`, no sample format has been found.
+    /// If [`None`], no sample format has been found.
     pub sample_format: Option<SampleFormat>,
     /// Audio sample rate in samples/second.
     pub sample_rate: usize,
@@ -234,7 +235,7 @@ pub struct AudioProperties {
     ///
     /// It represents the number of bits actually used to code each sample,
     /// not the number of bits used to store each sample,
-    /// and may hence be different from what `[SampleFormat]` would imply.
+    /// and may hence be different from what [`SampleFormat`] would imply.
     ///
     /// Figuring out which bytes are significant and which are not is left to
     /// a developer.
@@ -243,7 +244,7 @@ pub struct AudioProperties {
     pub channels_count: usize,
     /// Audio stream channel layout.
     ///
-    /// If `None`, no channel layout has been found.
+    /// If [`None`], no channel layout has been found.
     pub channel_layout: Option<Vec<AudioChannel>>,
     /// Audio stream number of samples.
     pub samples_count: usize,
@@ -272,7 +273,7 @@ pub struct AudioSource(*mut ffms2_sys::FFMS_AudioSource);
 unsafe impl Send for AudioSource {}
 
 impl AudioSource {
-    /// Creates a new `[AudioSource]` instance.
+    /// Creates a new [`AudioSource`] instance.
     pub fn new(
         source_file: &Path,
         track_number: usize,
@@ -307,7 +308,7 @@ impl AudioSource {
         }
     }
 
-    /// Creates a new `[AudioSource]` instance also considering the mode to fill
+    /// Creates a new [`AudioSource`] instance also considering the mode to fill
     /// audio gaps and the Dynamic Range Compression, which balances the range
     /// between the loudest and quietest sounds.
     pub fn audio_source_2(
@@ -348,7 +349,7 @@ impl AudioSource {
         }
     }
 
-    /// Returns the `[AudioProperties]` structure.
+    /// Returns the [`AudioProperties`] structure.
     pub fn audio_properties(&self) -> AudioProperties {
         let audio_prop = unsafe { ffms2_sys::FFMS_GetAudioProperties(self.0) };
         let audio_ref = unsafe { &*audio_prop };
@@ -408,7 +409,7 @@ impl AudioSource {
         }
     }
 
-    /// Returns the `[ResampleOptions]` structure.
+    /// Returns the [`ResampleOptions`] structure.
     pub fn resample_options(&self) -> ResampleOptions {
         let res_opt = unsafe { ffms2_sys::FFMS_CreateResampleOptions(self.0) };
         let ref_res = unsafe { *res_opt };
