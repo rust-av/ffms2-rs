@@ -7,6 +7,9 @@ pub mod resample;
 pub mod track;
 pub mod video;
 
+use std::fmt;
+use std::str::FromStr;
+
 use ffms2_sys::{
     FFMS_Deinit, FFMS_GetLogLevel, FFMS_GetVersion, FFMS_Init, FFMS_LogLevels,
     FFMS_SetLogLevel,
@@ -16,6 +19,7 @@ use ffms2_sys::{
 #[derive(Clone, Copy, Debug, Default)]
 pub enum LogLevel {
     /// Show nothing.
+    #[default]
     Quiet,
     /// Show fatal errors which could lead the process to crash, such as an
     /// assertion failure.
@@ -32,7 +36,6 @@ pub enum LogLevel {
     /// Show informative messages during processing.
     ///
     /// This is in addition to warnings and errors.
-    #[default]
     Info,
     /// Same as `Info`, except more verbose.
     Verbose,
@@ -43,6 +46,14 @@ pub enum LogLevel {
 }
 
 impl LogLevel {
+    /// Returns all [`LogLevel`]'s in natural language.
+    pub const fn all() -> &'static [&'static str] {
+        &[
+            "quiet", "panic", "fatal", "error", "warning", "info", "verbose",
+            "debug", "trace",
+        ]
+    }
+
     const fn ffms2_log_level(self) -> FFMS_LogLevels {
         match self {
             Self::Quiet => FFMS_LogLevels::FFMS_LOG_QUIET,
@@ -70,6 +81,42 @@ impl LogLevel {
             e if e == FFMS_LogLevels::FFMS_LOG_TRACE as i32 => Self::Trace,
             _ => Self::Error,
         }
+    }
+}
+
+impl FromStr for LogLevel {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "quiet" => Ok(Self::Quiet),
+            "panic" => Ok(Self::Panic),
+            "fatal" => Ok(Self::Fatal),
+            "error" => Ok(Self::Error),
+            "warning" => Ok(Self::Warning),
+            "info" => Ok(Self::Info),
+            "verbose" => Ok(Self::Verbose),
+            "debug" => Ok(Self::Debug),
+            "trace" => Ok(Self::Trace),
+            _ => Err(format!("Unknown log level: {s}")),
+        }
+    }
+}
+
+impl fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = match self {
+            Self::Quiet => "quiet",
+            Self::Panic => "panic",
+            Self::Fatal => "fatal",
+            Self::Error => "error",
+            Self::Warning => "warning",
+            Self::Info => "info",
+            Self::Verbose => "verbose",
+            Self::Debug => "debug",
+            Self::Trace => "trace",
+        };
+        s.fmt(f)
     }
 }
 

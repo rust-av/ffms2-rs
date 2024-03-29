@@ -3,6 +3,7 @@ use std::fmt;
 use std::mem;
 use std::panic;
 use std::process;
+use std::str::FromStr;
 
 use std::ffi::CString;
 use std::os::raw::c_void;
@@ -30,6 +31,11 @@ pub enum IndexErrorHandling {
 }
 
 impl IndexErrorHandling {
+    /// Returns all [`IndexErrorHandling`]'s in natural language.
+    pub const fn all() -> &'static [&'static str] {
+        &["abort", "clear track", "stop track", "ignore"]
+    }
+
     const fn ffms2_index_error_handling(self) -> FFMS_IndexErrorHandling {
         match self {
             Self::Abort => FFMS_IndexErrorHandling::FFMS_IEH_ABORT,
@@ -45,6 +51,20 @@ impl IndexErrorHandling {
             FFMS_IndexErrorHandling::FFMS_IEH_CLEAR_TRACK => Self::ClearTrack,
             FFMS_IndexErrorHandling::FFMS_IEH_STOP_TRACK => Self::StopTrack,
             FFMS_IndexErrorHandling::FFMS_IEH_IGNORE => Self::Ignore,
+        }
+    }
+}
+
+impl FromStr for IndexErrorHandling {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "abort" => Ok(Self::Abort),
+            "clear track" => Ok(Self::ClearTrack),
+            "stop track" => Ok(Self::StopTrack),
+            "ignore" => Ok(Self::Ignore),
+            _ => Err(format!("Unknown index error: {s}")),
         }
     }
 }
