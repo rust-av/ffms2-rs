@@ -109,6 +109,9 @@ pub enum Error {
     /// A `ffms2` API error.
     #[error("ffms2 API error.")]
     FFMS2(borrow::Cow<'static, str>),
+    /// I/O error.
+    #[error("Failed to perform an I/O operation.")]
+    InputOutput(#[from] std::io::Error),
     /// The path is not a file.
     #[error("The path is not a file.")]
     NotAFile,

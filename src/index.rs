@@ -469,7 +469,7 @@ impl Indexer {
     /// audio during the indexing process.
     ///
     /// Returns an error when a wrong track number is passed.
-    pub fn enable_track(self, track: usize) -> Result<Self> {
+    pub fn enable_track(&mut self, track: usize) -> Result<()> {
         if track > self.tracks_count() - 1 {
             return Err(Error::WrongTrack);
         }
@@ -477,7 +477,7 @@ impl Indexer {
         unsafe {
             ffms2_sys::FFMS_TrackIndexSettings(self.0, track as i32, 1, 0);
         }
-        Ok(self)
+        Ok(())
     }
 
     /// Disables the indexing process for the given track number.
@@ -486,7 +486,7 @@ impl Indexer {
     /// audio during the indexing process.
     ///
     /// Returns an error when a wrong track number is passed.
-    pub fn disable_track(self, track: usize) -> Result<Self> {
+    pub fn disable_track(&mut self, track: usize) -> Result<()> {
         if track > self.tracks_count() - 1 {
             return Err(Error::WrongTrack);
         }
@@ -494,7 +494,7 @@ impl Indexer {
         unsafe {
             ffms2_sys::FFMS_TrackIndexSettings(self.0, track as i32, 0, 0);
         }
-        Ok(self)
+        Ok(())
     }
 
     /// Enables the indexing process for the given track type.
@@ -504,7 +504,7 @@ impl Indexer {
     ///
     /// Returns an error when a [`TrackType.Unknown`](TrackType::Unknown)
     /// track type is passed.
-    pub fn enable_track_type(self, track_type: TrackType) -> Result<Self> {
+    pub fn enable_track_type(&mut self, track_type: TrackType) -> Result<()> {
         if matches!(track_type, TrackType::Unknown) {
             return Err(Error::UnknownTrackType);
         }
@@ -518,7 +518,7 @@ impl Indexer {
             );
         }
 
-        Ok(self)
+        Ok(())
     }
 
     /// Disables the indexing process for the given track type.
@@ -528,7 +528,7 @@ impl Indexer {
     ///
     /// Returns an error when a [`TrackType.Unknown`](TrackType::Unknown)
     /// track type is passed.
-    pub fn disable_track_type(self, track_type: TrackType) -> Result<Self> {
+    pub fn disable_track_type(&mut self, track_type: TrackType) -> Result<()> {
         if matches!(track_type, TrackType::Unknown) {
             return Err(Error::UnknownTrackType);
         }
@@ -542,7 +542,7 @@ impl Indexer {
             );
         }
 
-        Ok(self)
+        Ok(())
     }
 
     /// Sets a callback function for indexing progress updates.

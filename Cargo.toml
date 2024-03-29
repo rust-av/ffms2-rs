@@ -13,7 +13,7 @@ thiserror = "1.0.50"
 #ffmpeg-the-third = "1.2.2"
 
 [dev-dependencies]
-structopt = "0.3"
+clap = { version = "^4.5", features = ["derive"] }
 
 [workspace]
 members = ["ffms2-sys"]

@@ -1,54 +1,52 @@
-extern crate ffms2;
-extern crate structopt;
-
-use std::fs::File;
-use std::io::Write;
 use std::path::{Path, PathBuf};
-use structopt::StructOpt;
 
-use ffms2::index::*;
-use ffms2::track::*;
-use ffms2::*;
+use clap::builder::TypedValueParser as _;
+use clap::Parser;
 
-macro_rules! print_progress {
-    ($cond:expr, $error:expr) => {
-        if $cond {
-            println!($error);
-        }
-    };
-}
+use ffms2::error::Result;
+use ffms2::index::{Index, IndexErrorHandling, Indexer};
+use ffms2::track::{Track, TrackType};
+use ffms2::{Log, LogLevel, FFMS2};
 
-#[derive(Debug, StructOpt)]
-struct CliArgs {
-    /// Force overwriting of existing index file, if any
-    #[structopt(short = "f", long = "force")]
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Force overwriting of an existing index file whether is present.
     force: bool,
-    /// Set FFmpeg verbosity level
-    #[structopt(short = "v", long = "verbose", default_value = "0")]
-    verbose: usize,
-    /// Disable progress reporting
-    #[structopt(short = "p", long = "progress")]
+    /// Set `ffms2` verbosity level.
+    #[arg(default_value_t = LogLevel::Debug,
+        value_parser = clap::builder::PossibleValuesParser::new(LogLevel::all())
+            .map(|s| s.parse::<LogLevel>().unwrap()))]
+    verbose: LogLevel,
+    /// Enable progress reporting.
     progress: bool,
-    /// Write timecodes for all video tracks to outputfile_track00.tc.txt
-    #[structopt(short = "c", long = "timecodes")]
+    /// Write timecodes for all indexed video tracks into a file.
     timecodes: bool,
-    /// Write keyframes for all video tracks to outputfile_track00.kf.txt
-    #[structopt(short = "k", long = "keyframes")]
+    /// Write key frames for all indexed video tracks into a file.
     keyframes: bool,
-    /// Set the audio indexing mask to N
+    /// Set the audio indexing mask to N.
+    ///
     /// (-1 means index all tracks, 0 means index none)
-    #[structopt(short = "t", long = "index", default_value = "0")]
-    index_mask: i64,
-    /// Set audio decoding error handling
-    #[structopt(short = "s", long = "audio-decoding", default_value = "0")]
-    ignore_errors: usize,
+    #[arg(short = 't', long = "index")]
+    audio_index_mask: Option<u64>,
+    /// Set audio decoding error handling.
+    #[arg(short = 's', long = "audio-decoding", default_value_t = IndexErrorHandling::Abort,
+        value_parser = clap::builder::PossibleValuesParser::new(IndexErrorHandling::all())
+            .map(|s| s.parse::<IndexErrorHandling>().unwrap()))]
+    ignore_errors: IndexErrorHandling,
     /// The file to be indexed
-    #[structopt(parse(from_os_str))]
     input_file: PathBuf,
     /// The output file.
-    /// If no output filename is specified, input_file.ffindex will be used
-    #[structopt(parse(from_os_str))]
+    ///
+    ///If no output filename is specified, `input_filename.ffindex` will be used
     output_file: Option<PathBuf>,
+}
+
+#[inline(always)]
+fn print_progress(args_progress: bool, error: &str) {
+    if args_progress {
+        println!("{error}");
+    }
 }
 
 fn update_progress(
@@ -69,145 +67,122 @@ fn update_progress(
     0
 }
 
-#[inline]
-fn dump_filename(
-    track: &Track,
-    track_num: usize,
+fn write_frame_info<W>(
+    index: &Index,
     cache_file: &Path,
-    suffix: &str,
-) -> PathBuf {
-    if track.NumFrames() == 0 {
-        return PathBuf::new();
-    }
+    write_info: W,
+) -> Result<()>
+where
+    W: Fn(Track, String) -> Result<()>,
+{
+    for track_id in 0..index.tracks_count() {
+        let track = Track::from_index(&index, track_id)?;
 
-    if let TrackType::TYPE_VIDEO = track.TrackType() {
-        let start = cache_file.to_str().unwrap();
-        let filename = format!("{}_track{:02}{}", start, track_num, suffix);
-        PathBuf::from(filename)
-    } else {
-        PathBuf::new()
+        if track.frames_count() == 0 {
+            println!("Track does not have frames. Skipping it.");
+            continue;
+        }
+
+        if let TrackType::Video = track.track_type() {
+            let filename = format!(
+                "{}_track{:02}.tc.txt",
+                cache_file.to_string_lossy(),
+                track_id
+            );
+            write_info(track, filename)?;
+        }
     }
+    Ok(())
 }
 
-fn do_indexing(
-    args: &CliArgs,
-    cache_file: &Path,
-    ignore_errors: IndexErrorHandling,
-) -> std::io::Result<()> {
+fn do_indexing(args: Args, cache_file: PathBuf) -> Result<()> {
     let mut progress = 0;
 
-    if cache_file.exists() && !args.force {
-        panic!(
-            "Error: index file already exists, \
-             use -f if you are sure you want to overwrite it."
-        );
-    }
-
-    let indexer = Indexer::new(&args.input_file).unwrap();
+    let mut indexer = Indexer::new(&args.input_file)?;
 
     if args.progress {
         update_progress(0, 100, None);
-        indexer.ProgressCallback(update_progress, &mut progress);
+        indexer.progress_callback(update_progress, &mut progress);
     }
 
-    if args.index_mask == -1 {
-        indexer.TrackTypeIndexSettings(TrackType::TYPE_AUDIO, 1);
-    }
-
-    for i in 0..64 {
-        if ((args.index_mask >> i) & 1) != 0 {
-            indexer.TrackIndexSettings(i, 1);
-        }
-    }
-
-    let index = indexer.DoIndexing2(ignore_errors).unwrap();
-
-    if args.timecodes {
-        print_progress!(args.progress, "Writing timecodes...");
-        let num_tracks = index.NumTracks();
-        for t in 0..num_tracks {
-            let track = Track::TrackFromIndex(&index, t);
-            let filename = dump_filename(&track, t, cache_file, ".tc.txt");
-            if !filename.to_str().unwrap().is_empty()
-                && track.WriteTimecodes(&filename).is_err()
-            {
-                println!(
-                    "Failed to write timecodes file {}",
-                    filename.to_str().unwrap()
-                );
-            }
-        }
-        print_progress!(args.progress, "Done.");
-    }
-
-    if args.keyframes {
-        print_progress!(args.progress, "Writing keyframes...");
-        let num_tracks = index.NumTracks();
-        for t in 0..num_tracks {
-            let track = Track::TrackFromIndex(&index, t);
-            let filename = dump_filename(&track, t, cache_file, ".kf.txt");
-            if !filename.to_str().unwrap().is_empty() {
-                let mut file = File::create(filename)?;
-                write!(file, "# keyframe format v1\nfps 0\n")?;
-                let frame_count = track.NumFrames();
-                for f in 0..frame_count {
-                    if track.FrameInfo(f).KeyFrame() != 0 {
-                        writeln!(file, "{}", f)?;
-                    }
+    if let Some(audio_index_mask) = args.audio_index_mask {
+        if audio_index_mask > 0 {
+            for index_id in 0..64 {
+                if ((audio_index_mask >> index_id) & 1) != 0 {
+                    indexer.enable_track(index_id)?;
                 }
             }
         }
-        print_progress!(args.progress, "Done.");
+    } else {
+        indexer.enable_track_type(TrackType::Audio)?
     }
 
-    print_progress!(args.progress, "Writing index...");
+    let index = indexer.do_indexing(args.ignore_errors)?;
 
-    index.WriteIndex(cache_file).unwrap();
+    if args.timecodes {
+        print_progress(args.progress, "Writing timecodes...");
 
-    print_progress!(args.progress, "Done.");
+        write_frame_info(&index, &cache_file, |track, filename| {
+            track.write_timecodes(Path::new(&filename))
+        })?;
+
+        print_progress(args.progress, "Done.");
+    }
+
+    if args.keyframes {
+        print_progress(args.progress, "Writing keyframes...");
+
+        for t in 0..index.tracks_count() {
+            let track = Track::from_index(&index, t).unwrap();
+            if track.frames_count() == 0 {
+                println!("Track does not have frames. Skipping it.");
+                continue;
+            }
+
+            if let TrackType::Video = track.track_type() {
+                let filename = format!(
+                    "{}_track{:02}.kf.txt",
+                    cache_file.to_string_lossy(),
+                    t
+                );
+                track.write_key_frames(Path::new(&filename))?;
+            }
+        }
+
+        print_progress(args.progress, "Done.");
+    }
+
+    print_progress(args.progress, "Writing index...");
+
+    index.write_to_file(&cache_file).unwrap();
+
+    print_progress(args.progress, "Done.");
 
     Ok(())
 }
 
 fn main() {
-    let args = CliArgs::from_args();
+    let args = Args::parse();
 
-    if args.ignore_errors > 3 {
-        panic!("Error: invalid audio decoding error handling mode");
-    }
-
-    let cache_file = if let Some(out) = &args.output_file {
-        out.to_path_buf()
+    let cache_file = if let Some(ref out) = args.output_file {
+        out.clone()
     } else {
         let file_stem = args
             .input_file
             .as_path()
             .file_stem()
-            .unwrap()
-            .to_str()
-            .unwrap();
-        let filename = format!("{}.ffindex", file_stem);
-        Path::new(&filename).to_path_buf()
+            .expect("Error in extracting the file stem")
+            .to_string_lossy();
+        PathBuf::from(format!("{file_stem}.ffindex"))
     };
 
-    FFMS2::Init();
+    if cache_file.is_file() && !args.force {
+        panic!("Error: index file already exists, use -f to overwrite it.");
+    }
 
-    let level = match args.verbose {
-        0 => LogLevels::LOG_QUIET,
-        1 => LogLevels::LOG_WARNING,
-        2 => LogLevels::LOG_INFO,
-        3 => LogLevels::LOG_VERBOSE,
-        _ => LogLevels::LOG_DEBUG,
-    };
+    FFMS2::init();
 
-    Log::SetLogLevel(level);
+    Log::set_log_level(args.verbose);
 
-    let ignore_errors = match args.ignore_errors {
-        0 => IndexErrorHandling::IEH_IGNORE,
-        1 => IndexErrorHandling::IEH_STOP_TRACK,
-        2 => IndexErrorHandling::IEH_CLEAR_TRACK,
-        _ => IndexErrorHandling::IEH_ABORT,
-    };
-
-    do_indexing(&args, &cache_file, ignore_errors).unwrap();
+    do_indexing(args, cache_file).unwrap();
 }

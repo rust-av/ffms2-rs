@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::Write;
 use std::path::Path;
 
 use std::ffi::CString;
@@ -91,16 +93,16 @@ pub struct Track(*mut ffms2_sys::FFMS_Track, usize);
 unsafe impl Send for Track {}
 
 impl Track {
-    /// Builds a [`Track`] from the given [`Index`] and track number.
-    pub fn from_index(index: &Index, track_number: usize) -> Result<Self> {
-        if track_number > index.tracks_count() - 1 {
+    /// Builds a [`Track`] from the given [`Index`] and track identifier.
+    pub fn from_index(index: &Index, track_id: usize) -> Result<Self> {
+        if track_id > index.tracks_count() - 1 {
             return Err(Error::WrongTrack);
         }
 
         let track = unsafe {
             ffms2_sys::FFMS_GetTrackFromIndex(
                 index.as_mut_ptr(),
-                track_number as i32,
+                track_id as i32,
             )
         };
         Self::evaluate_track(track)
@@ -126,14 +128,10 @@ impl Track {
         Self::evaluate_track(track)
     }
 
-    /// Writes **Matroska v2** timecodes for the track in a file.
+    /// Writes **Matroska v2** timecodes of a video track into a file.
     ///
     /// Only meaningful for video tracks.
     pub fn write_timecodes(&self, timecode_file: &Path) -> Result<()> {
-        if timecode_file.is_file() {
-            return Err(Error::NotAFile);
-        }
-
         let source =
             CString::new(timecode_file.to_str().ok_or(Error::StrConversion)?)?;
 
@@ -151,6 +149,20 @@ impl Track {
         } else {
             Ok(())
         }
+    }
+
+    /// Writes every key frame contained in a video track into a file.
+    ///
+    /// Only meaningful for video tracks.
+    pub fn write_key_frames(&self, keyframes_file: &Path) -> Result<()> {
+        let mut file = File::create(keyframes_file)?;
+        write!(file, "# keyframe format v1\nfps 0\n")?;
+        for frame in 0..self.1 {
+            if self.frame_info(frame)?.keyframe {
+                writeln!(file, "{}", frame)?;
+            }
+        }
+        Ok(())
     }
 
     /// Returns the information on the indexed frame passed as input.
