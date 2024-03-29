@@ -14,7 +14,9 @@ struct Args {
     /// Force overwriting of an existing index file whether is present.
     force: bool,
     /// Set `ffms2` verbosity level.
-    #[arg(default_value_t = LogLevel::Quiet, value_parser = clap::builder::PossibleValuesParser::new(LogLevel::all()).map(|s| s.parse::<LogLevel>().unwrap()))]
+    #[arg(default_value_t = LogLevel::Quiet,
+        value_parser = clap::builder::PossibleValuesParser::new(LogLevel::all())
+        .map(|s| s.parse::<LogLevel>().unwrap()))]
     verbose: LogLevel,
     /// Enable progress reporting.
     progress: bool,
@@ -28,7 +30,9 @@ struct Args {
     #[arg(short = 't', long = "index")]
     audio_index_mask: Option<u64>,
     /// Set audio decoding error handling.
-    #[arg(short = 's', long = "audio-decoding", default_value_t = IndexErrorHandling::Abort, value_parser = clap::builder::PossibleValuesParser::new(IndexErrorHandling::all()).map(|s| s.parse::<IndexErrorHandling>().unwrap()))]
+    #[arg(short = 's', long = "audio-decoding", default_value_t = IndexErrorHandling::Abort,
+        value_parser = clap::builder::PossibleValuesParser::new(IndexErrorHandling::all())
+        .map(|s| s.parse::<IndexErrorHandling>().unwrap()))]
     ignore_errors: IndexErrorHandling,
     /// The file to be indexed
     input_file: PathBuf,
