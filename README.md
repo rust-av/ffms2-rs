@@ -4,8 +4,7 @@
 
 [ffms2](https://github.com/FFMS/ffms2) bindings for Rust.
 
-Required `FFmpeg` version:
-    - `2dfdee3` commit which removes the `XVMC` pixel format, the last pre-processor macro getting the pixel format count wrong.
+It requires `FFmpeg` version `7.0`.
 
 ## TODO
 - [x] Simple bindings

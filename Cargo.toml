@@ -10,7 +10,7 @@ license = "MIT"
 [dependencies]
 ffms2-sys = { path = "./ffms2-sys"}
 thiserror = "1.0.50"
-#ffmpeg-the-third = "1.2.2"
+#ffmpeg-the-third = { git = "https://github.com/shssoichiro/ffmpeg-the-third" }
 
 [dev-dependencies]
 clap = { version = "^4.5", features = ["derive"] }
