@@ -4,6 +4,7 @@ use crate::*;
 use ffms2_sys::*;
 
 use std::default::Default;
+use std::ffi::c_char;
 use std::ffi::CString;
 use std::mem;
 use std::os::raw::c_void;
@@ -202,13 +203,13 @@ impl Indexer {
 
     pub fn CodecNameI(&self, Track: usize) -> String {
         let c_ptr = unsafe { FFMS_GetCodecNameI(self.indexer, Track as i32) };
-        let c_str = unsafe { CString::from_raw(c_ptr as *mut i8) };
+        let c_str = unsafe { CString::from_raw(c_ptr as *mut c_char) };
         c_str.to_str().unwrap().to_owned()
     }
 
     pub fn FormatNameI(&self) -> String {
         let c_ptr = unsafe { FFMS_GetFormatNameI(self.indexer) };
-        let c_str = unsafe { CString::from_raw(c_ptr as *mut i8) };
+        let c_str = unsafe { CString::from_raw(c_ptr as *mut c_char) };
         c_str.to_str().unwrap().to_owned()
     }
 
