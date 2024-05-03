@@ -14,6 +14,7 @@ pub mod video;
 
 use ffms2_sys::*;
 
+use std::ffi::c_char;
 use std::fmt;
 use std::mem;
 use std::ptr;
@@ -121,7 +122,7 @@ impl Default for Error {
             error,
             buffer: [0; 1024],
         };
-        ffms.error.Buffer = ffms.buffer.as_mut_ptr() as *mut i8;
+        ffms.error.Buffer = ffms.buffer.as_mut_ptr() as *mut c_char;
         ffms.error.BufferSize = mem::size_of_val(&ffms.buffer) as i32;
         ffms
     }
