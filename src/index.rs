@@ -276,6 +276,10 @@ impl Indexer {
         F: FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,
     {
         struct CallbackData<'a> {
+            #[expect(
+                clippy::type_complexity,
+                reason = "can't make trait into type alias"
+            )]
             callback: Box<
                 dyn FnMut(usize, usize, Option<&mut usize>) -> usize + 'static,
             >,

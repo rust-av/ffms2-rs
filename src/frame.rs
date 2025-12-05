@@ -94,7 +94,11 @@ create_struct!(
         MasteringDisplayMaxLuminance,
         HasContentLightLevel,
         ContentLightLevelMax,
-        ContentLightLevelAverage
+        ContentLightLevelAverage,
+        DolbyVisionRPU,
+        DolbyVisionRPUSize,
+        HDR10Plus,
+        HDR10PlusSize,
     ),
     (
         [ptr::null(); 4],
@@ -125,7 +129,11 @@ create_struct!(
         0.0,
         0,
         0,
-        0
+        0,
+        std::ptr::null_mut(),
+        0,
+        std::ptr::null_mut(),
+        0,
     )
 );
 
@@ -230,7 +238,7 @@ impl Frame {
             } else {
                 let sub_h = if i == 0 { 0 } else { log2_chroma_h };
                 let plane_slice_length =
-                    linesize[i] * self.EncodedHeight >> sub_h;
+                    (linesize[i] * self.EncodedHeight) >> sub_h;
                 let plane_slice = unsafe {
                     slice::from_raw_parts(data[i], plane_slice_length as usize)
                 };

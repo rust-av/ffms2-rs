@@ -1,67 +1,54 @@
 name: ffms2
 
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - master
 
 jobs:
   format-and-tests:
-
     strategy:
       matrix:
         conf:
-         - clippy-rustfmt
-         - ffms2-tests
+          - clippy-rustfmt
+          - ffms2-tests
         include:
-         - conf: clippy-rustfmt
-           components: clippy, rustfmt
+          - conf: clippy-rustfmt
+            components: clippy, rustfmt
 
     runs-on: ubuntu-latest
+    container: shssoichiro/av1an-ci:latest
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Install ffmpeg
-      env:
-        FFMPEG_PKG: libavcodec-dev libavformat-dev libavdevice-dev zlib1g-dev
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y $FFMPEG_PKG
+      - name: Install Rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: ${{ matrix.components }}
 
-    - name: Install ffms2
-      run: |
-        git clone --depth 1 https://github.com/FFMS/ffms2.git
-        cd ffms2
-        ./autogen.sh --prefix=$HOME/ffms2-dir
-        make install
+      - uses: Swatinem/rust-cache@v2
 
-    - name: Install stable
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-        components: ${{ matrix.clippy-rustfmt }}
+      - name: Run rustfmt
+        if: matrix.conf == 'clippy-rustfmt'
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
 
-    - name: Set pkg-config variable
-      env:
-        FFMS2_PKG_CONFIG: ffms2-dir/lib/pkgconfig
-      run: |
-        echo "PKG_CONFIG_PATH=$HOME/$FFMS2_PKG_CONFIG" >> $GITHUB_ENV
+      - name: Run clippy
+        if: matrix.conf == 'clippy-rustfmt'
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-targets -- -D warnings
 
-    - name: Run rustfmt
-      if: matrix.conf == 'clippy-rustfmt'
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: -- --check
-
-    - name: Run clippy
-      if: matrix.conf == 'clippy-rustfmt'
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: --all-targets --all-features -- -D warnings
-
-    - name: Run tests
-      if: matrix.conf == 'ffms2-tests'
-      run: |
-        cargo test --all-features
+      - name: Run tests
+        if: matrix.conf == 'ffms2-tests'
+        uses: actions-rs/cargo@v1
+        with:
+          command: test

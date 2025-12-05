@@ -107,7 +107,7 @@ from_i32!(
 
 pub struct Error {
     error: FFMS_ErrorInfo,
-    buffer: [u8; 1024],
+    buffer: Box<[u8; 1024]>,
 }
 
 impl Default for Error {
@@ -120,7 +120,7 @@ impl Default for Error {
         };
         let mut ffms = Error {
             error,
-            buffer: [0; 1024],
+            buffer: Box::new([0; 1024]),
         };
         ffms.error.Buffer = ffms.buffer.as_mut_ptr() as *mut c_char;
         ffms.error.BufferSize = mem::size_of_val(&ffms.buffer) as i32;
@@ -135,7 +135,7 @@ impl fmt::Debug for Error {
             "Error: {}\nSubError: {}\n Cause: {}",
             Errors::from_i32(self.error.ErrorType),
             Errors::from_i32(self.error.SubType),
-            str::from_utf8(&self.buffer).unwrap(),
+            str::from_utf8(self.buffer.as_ref()).unwrap(),
         )
     }
 }
@@ -172,13 +172,5 @@ impl FFMS2 {
 
     pub fn Version() -> usize {
         unsafe { FFMS_GetVersion() as usize }
-    }
-}
-
-impl Drop for FFMS2 {
-    fn drop(&mut self) {
-        unsafe {
-            FFMS_Deinit();
-        }
     }
 }
