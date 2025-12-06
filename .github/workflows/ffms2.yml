@@ -21,7 +21,7 @@ jobs:
     container: shssoichiro/av1an-ci:latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
 
       - name: Install Rust stable
         uses: actions-rs/toolchain@v1
