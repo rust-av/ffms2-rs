@@ -17,6 +17,8 @@ fn format_write(builder: bindgen::Builder) -> String {
 }
 
 fn main() {
+    let use_static = env::var("CARGO_FEATURE_STATIC").is_ok();
+
     // Consider 'FFMS_INCLUDE_DIR' and 'FFMS_LIB_DIR', if pkg-config should not be used.
     let headers = env::var("FFMS_INCLUDE_DIR").map(|value| {
         // Ensure the include directory is valid
@@ -35,9 +37,10 @@ fn main() {
 
         // Using dynamic library in Windows remains a problem. We have to copy the DLL into a path...
         // Problem: If 'FFMS_LIB_DIR' is outside of 'target', it is not considered (https://doc.rust-lang.org/cargo/reference/environment-variables.html).
-        #[cfg(windows)] {
+        // Only handle DLL copying for dynamic linking on Windows
+        #[cfg(windows)]
+        if !use_static {
             let cargo_output_dir = env::var("OUT_DIR").expect("Unable to get OUT_DIR");
-            // We need to add the file in target/{debug|release as it is included in the PATH: https://doc.rust-lang.org/cargo/reference/environment-variables.html#dynamic-library-paths
             let linkable_dll: PathBuf = [cargo_output_dir.as_ref(), "..", "..", "..", "ffms2.dll"].iter().collect();
 
             // Copy the file if it does not exists
@@ -52,7 +55,11 @@ fn main() {
         }
 
         // Add the flags for cargo otherwise explicitely added by pkg-config-rs
-        println!("cargo:rustc-link-lib=dylib=ffms2");
+        if use_static {
+            println!("cargo:rustc-link-lib=static=ffms2");
+        } else {
+            println!("cargo:rustc-link-lib=dylib=ffms2");
+        }
         println!("cargo:rustc-link-search=native={}", lib_dir.to_string_lossy());
 
         vec![include_dir]
