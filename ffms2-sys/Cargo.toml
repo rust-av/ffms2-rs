@@ -6,6 +6,7 @@ description = "FFI bindings to ffms2"
 repository = "https://github.com/rust-av/ffms2-rs"
 edition = "2021"
 license = "MIT"
+include = ["/src", "/data", "build.rs", "Cargo.toml", "LICENSE", "README.md"]
 
 [features]
 static = []
