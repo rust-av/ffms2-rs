@@ -12,7 +12,7 @@ include = ["/src", "Cargo.toml", "LICENSE", "README.md"]
 ffms2-sys = "0.3.0"
 cfg-if = "1.0.4"
 paste = "1.0.15"
-ffmpeg-the-third = "4.0.1"
+ffmpeg-the-third = "5.0.0"
 
 [dev-dependencies]
 structopt = "0.3.26"
