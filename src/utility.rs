@@ -1,4 +1,4 @@
-extern crate paste;
+extern crate pastey;
 
 macro_rules! simple_enum {
     ($enum:ident, ($($field_name:ident),*$(,)*)) => {
@@ -16,7 +16,7 @@ macro_rules! create_enum {
         simple_enum!($enum, ($($field_name),*));
 
         impl $enum {
-            paste::item! {
+            pastey::item! {
                 pub(crate) fn [<to_ $func_name>](self) -> $type {
                     match self {
                         $(
@@ -33,7 +33,7 @@ macro_rules! from_i32 {
     ($enum:ident, $type:ident,
     ($($field_name:ident),*$(,)*)) => {
         impl $enum {
-            paste::item! {
+            pastey::item! {
                 pub(crate) fn from_i32(e: i32) -> Self {
                     match e {
                         $(

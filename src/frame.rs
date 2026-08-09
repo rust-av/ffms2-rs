@@ -227,9 +227,9 @@ impl Frame {
         let pix_fmt: AVPixelFormat =
             unsafe { mem::transmute(self.frame.EncodedPixelFormat) };
 
-        let log2_chroma_h = match Pixel::from(pix_fmt).descriptor() {
-            Some(pix_fmt_descriptor) => pix_fmt_descriptor.log2_chroma_h(),
-            None => return None,
+        let log2_chroma_h = {
+            let pix_fmt_descriptor = Pixel::from(pix_fmt).descriptor()?;
+            pix_fmt_descriptor.log2_chroma_h()
         };
 
         for i in 0..num_planes {
