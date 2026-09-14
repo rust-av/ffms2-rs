@@ -12,7 +12,7 @@ include = ["/src", "/data", "build.rs", "Cargo.toml", "LICENSE", "README.md"]
 static = []
 
 [build-dependencies]
-bindgen = "0.72.1"
+bindgen = "0.73.2"
 metadeps = "1.1.2"
 
 [package.metadata.pkg-config]
