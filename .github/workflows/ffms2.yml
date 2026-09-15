@@ -6,49 +6,48 @@ on:
     branches:
       - master
 
-jobs:
-  format-and-tests:
-    strategy:
-      matrix:
-        conf:
-          - clippy-rustfmt
-          - ffms2-tests
-        include:
-          - conf: clippy-rustfmt
-            components: clippy, rustfmt
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
+  format-and-clippy:
+    name: Format & Clippy
     runs-on: ubuntu-latest
     container: shssoichiro/av1an-ci:latest
 
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
 
       - name: Install Rust stable
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: ${{ matrix.components }}
+          components: clippy, rustfmt
 
-      - uses: Swatinem/rust-cache@v2
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
 
-      - name: Run rustfmt
-        if: matrix.conf == 'clippy-rustfmt'
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: -- --check
+      - name: Check formatting
+        run: cargo fmt --all -- --check --verbose
 
-      - name: Run clippy
-        if: matrix.conf == 'clippy-rustfmt'
-        uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-targets -- -D warnings
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    container: shssoichiro/av1an-ci:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
 
       - name: Run tests
-        if: matrix.conf == 'ffms2-tests'
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test --all-features --all-targets --verbose
